@@ -1,0 +1,136 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  // url and directUrl are removed here for Prisma 7!
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
+enum GroupStatus {
+  PENDING
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+enum MemberRole {
+  ADMIN
+  MEMBER
+}
+
+enum MemberStatus {
+  PENDING
+  ACTIVE
+  REMOVED
+}
+
+enum ContributionStatus {
+  PENDING
+  CONFIRMED
+  MISSED
+  LATE
+}
+
+enum TransactionType {
+  CONTRIBUTION
+  WITHDRAWAL
+  PAYOUT
+  REFUND
+  FEE
+}
+
+enum TransactionStatus {
+  PENDING
+  SUCCESS
+  FAILED
+  REVERSED
+}
+
+enum NotificationType {
+  CONTRIBUTION_DUE
+  CONTRIBUTION_CONFIRMED
+  PAYOUT_SCHEDULED
+  PAYOUT_SENT
+  GROUP_INVITE
+  GROUP_UPDATE
+  SYSTEM
+}
+
+model User {
+  id            String      @id @default(uuid())
+  email         String      @unique
+  phone         String      @unique
+  firstName     String
+  lastName      String
+  passwordHash  String
+  pin           String?     // hashed 4-digit transaction PIN
+  avatar        String?
+  status        UserStatus  @default(ACTIVE)
+  refreshToken  String?
+  isVerified    Boolean     @default(false)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  // Relations
+  groupsCreated  Group[]         @relation("GroupCreator")
+  memberships    GroupMember[]
+  contributions  Contribution[]
+  wallet         Wallet?
+  notifications  Notification[]
+
+  @@map("users")
+}
+
+model Group {
+  id          String        @id @default(uuid())
+  status      GroupStatus   @default(PENDING)
+  creatorId   String
+  creator     User          @relation("GroupCreator", fields: [creatorId], references: [id])
+  members     GroupMember[]
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+}
+
+model GroupMember {
+  id        String       @id @default(uuid())
+  userId    String
+  groupId   String
+  role      MemberRole   @default(MEMBER)
+  status    MemberStatus @default(PENDING)
+  user      User         @relation(fields: [userId], references: [id])
+  group     Group        @relation(fields: [groupId], references: [id])
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+}
+
+model Contribution {
+  id        String             @id @default(uuid())
+  userId    String
+  status    ContributionStatus @default(PENDING)
+  user      User               @relation(fields: [userId], references: [id])
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @updatedAt
+}
+
+model Wallet {
+  id        String   @id @default(uuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Notification {
+  id        String           @id @default(uuid())
+  userId    String
+  type      NotificationType
+  user      User             @relation(fields: [userId], references: [id])
+  createdAt DateTime         @default(now())
+}
