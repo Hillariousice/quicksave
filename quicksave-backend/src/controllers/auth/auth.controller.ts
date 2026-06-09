@@ -27,7 +27,7 @@ export const register = catchAsync(async (req: Request, res: Response) => {
   const passwordHash = await bcrypt.hash(password, 12);
   const hashedPin = await bcrypt.hash(pin, 12);
 
-  // 3. ⭐️ SENIOR DEV MOVE: Create User and Wallet in one atomic transaction!
+ 
   const newUser = await prisma.user.create({
     data: {
       email,

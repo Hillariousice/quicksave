@@ -5,7 +5,9 @@ import morgan from 'morgan';
 import { errorHandler } from './middleware/errorHandler';
 
 // Import your new auth router
-import authRoutes from './routes/auth.router'; 
+import authRoutes from './routes/auth.router';
+import groupRoutes from './routes/group.router';
+
 import { apiLimiter } from './middleware/rateLimiter';
 
 const app = express();
@@ -22,6 +24,7 @@ app.get('/health', (req, res) => {
 
 // 👉 Mount the Auth router here!
 app.use('/api/v1/auth', authRoutes);
+app.use('/api/v1/groups', groupRoutes);
 
 // Global Error Handler MUST be last
 app.use(errorHandler);

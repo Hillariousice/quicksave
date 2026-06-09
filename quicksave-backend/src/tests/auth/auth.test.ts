@@ -1,7 +1,9 @@
+import { describe, it, expect, beforeEach } from '@jest/globals';
 import request from 'supertest';
 import app from '../../app'; // Your Express app (without app.listen)
-import prisma from '../../config/prisma';
 import redis from '../../config/redis';
+import prisma from '../../config/database';
+
 
 describe('Authentication Flows', () => {
   const testUser = {

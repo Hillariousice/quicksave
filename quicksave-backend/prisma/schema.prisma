@@ -63,6 +63,21 @@ enum NotificationType {
   SYSTEM
 }
 
+enum Frequency {
+  DAILY
+  WEEKLY
+  MONTHLY
+}
+
+enum PayoutStatus {
+  PENDING
+  PROCESSING
+  PAID
+  FAILED
+}
+
+
+
 model User {
   id            String      @id @default(uuid())
   email         String      @unique
@@ -84,18 +99,41 @@ model User {
   contributions  Contribution[]
   wallet         Wallet?
   notifications  Notification[]
+  rotationSlots  RotationSlot[]
 
   @@map("users")
 }
 
 model Group {
   id          String        @id @default(uuid())
-  status      GroupStatus   @default(PENDING)
-  creatorId   String
-  creator     User          @relation("GroupCreator", fields: [creatorId], references: [id])
-  members     GroupMember[]
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  name        String 
+  description       String?       
+  contributionAmount Float   
+  frequency   Frequency     @default(MONTHLY)
+ 
+  startDate         DateTime?
+  payoutDate        DateTime?
+  nextPayoutDate    DateTime?
+
+  inviteCode        String        @unique 
+  maxCapacity       Int           @default(10)
+  currentMembers    Int           @default(0)     
+  totalContributions Float   @default(0)
+  cycleCount         Int           @default(0)      
+  cycleDuration      Int           @default(1)
+  status            GroupStatus   @default(PENDING)
+  creatorId         String
+
+  creator           User          @relation("GroupCreator", fields: [creatorId], references: [id])
+  members           GroupMember[]
+  wallet            Wallet?
+  contributions     Contribution[]
+  rotationSlots     RotationSlot[] 
+
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+
 }
 
 model GroupMember {
@@ -103,26 +141,39 @@ model GroupMember {
   userId    String
   groupId   String
   role      MemberRole   @default(MEMBER)
+  position    Int?              // payout order position
+  joinedAt    DateTime     @default(now()) 
   status    MemberStatus @default(PENDING)
   user      User         @relation(fields: [userId], references: [id])
   group     Group        @relation(fields: [groupId], references: [id])
   createdAt DateTime     @default(now())
   updatedAt DateTime     @updatedAt
+
+  
+  @@unique([userId, groupId])
 }
 
 model Contribution {
   id        String             @id @default(uuid())
   userId    String
+  groupId   String
+  paidAt    DateTime?
+  amount    Float 
   status    ContributionStatus @default(PENDING)
-  user      User               @relation(fields: [userId], references: [id])
+  user      User?              @relation(fields: [userId], references: [id])
+  group     Group?             @relation(fields: [groupId], references: [id])
   createdAt DateTime           @default(now())
   updatedAt DateTime           @updatedAt
 }
 
 model Wallet {
   id        String   @id @default(uuid())
-  userId    String   @unique
-  user      User     @relation(fields: [userId], references: [id])
+  balance   Float    @default(0)  
+  currency    String    @default("NGN")
+  userId    String?   @unique
+  groupId   String?  @unique 
+  user      User?     @relation(fields: [userId], references: [id])
+  group     Group?   @relation(fields: [groupId], references: [id])
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -133,4 +184,20 @@ model Notification {
   type      NotificationType
   user      User             @relation(fields: [userId], references: [id])
   createdAt DateTime         @default(now())
+}
+
+model RotationSlot {
+  id                 String       @id @default(uuid())
+  position           Int          
+  expectedPayoutDate DateTime     
+  status             PayoutStatus @default(PENDING)
+  userId             String
+  groupId            String
+  user               User         @relation(fields: [userId], references: [id])
+  group              Group        @relation(fields: [groupId], references: [id])
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+
+  @@unique([groupId, position])
+  @@unique([groupId, userId])   
 }

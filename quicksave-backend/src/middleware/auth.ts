@@ -39,7 +39,7 @@ export const requireAuth = async (req: Request, res: Response, next: NextFunctio
       return next(new AppError('The user belonging to this token no longer exists.', 401));
     }
 
-    // 3. ⭐️ SENIOR DEV MOVE: Check if the user is suspended!
+   
     if (currentUser.status === 'SUSPENDED') {
       return next(new AppError('Your account has been suspended. Please contact support.', 403));
     }
