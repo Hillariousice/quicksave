@@ -52,3 +52,10 @@ export const generateRotationSchema = z.object({
   startDate: z.string().datetime('Must be a valid ISO date string'),
   }),
 });
+
+
+export const updateStatusSchema = z.object({
+  body: z.object({
+    status: z.enum(['ACTIVE', 'PAUSED', 'COMPLETED', 'CANCELLED']),
+  }),
+});

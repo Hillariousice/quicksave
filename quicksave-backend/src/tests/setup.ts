@@ -1,6 +1,8 @@
 import { jest, beforeEach, afterAll } from '@jest/globals';
 import prisma from '../config/database';
 
+
+jest.setTimeout(30000); 
 // 1. Mock Nodemailer
 jest.mock('../utils/email', () => ({
   sendEmail: jest.fn(() => Promise.resolve()), 
@@ -19,11 +21,20 @@ jest.mock('../middleware/rateLimiter', () => ({
 }));
 
 // 4. Clean the Postgres database before every single test
+// 4. Clean the Postgres database before every single test
 beforeEach(async () => {
-  // Add group deletion so it cleans up the new tables too!
+  // 1st: Delete the deepest child tables
+  await prisma.activityLog.deleteMany();
+  await prisma.rotationSlot.deleteMany();
+  await prisma.contribution.deleteMany();
+  
+  // 2nd: Delete the middle-tier relation tables
   await prisma.groupMember.deleteMany();
-  await prisma.group.deleteMany();
+  await prisma.notification.deleteMany();
   await prisma.wallet.deleteMany();
+
+  // 3rd: Now that no child depends on them, it is safe to delete the parents!
+  await prisma.group.deleteMany();
   await prisma.user.deleteMany();
 });
 

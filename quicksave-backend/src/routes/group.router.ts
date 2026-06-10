@@ -1,8 +1,8 @@
 import { Router } from 'express';
 import { requireAuth } from '../middleware/auth';
 import { validate } from '../middleware/validate';
-import { createGroupSchema, generateRotationSchema, getGroupSchema, joinGroupSchema } from '../modules/group/group.schema';
-import { createGroup, joinGroup, getGroupDetails, getGroupMembers, generateRotation, getRotationSchedule } from '../controllers/group/group.controller';
+import { createGroupSchema, generateRotationSchema, getGroupSchema, joinGroupSchema, updateStatusSchema } from '../modules/group/group.schema';
+import { createGroup, joinGroup, getGroupDetails, getGroupMembers, generateRotation, getRotationSchedule, getActivityFeed, updateGroupStatus } from '../controllers/group/group.controller';
 
 
 const router = Router();
@@ -18,5 +18,8 @@ router.get('/:groupId/members', getGroupMembers);
 
 router.post('/:id/rotation/generate', validate(generateRotationSchema), generateRotation);
 router.get('/:id/rotation', validate(getGroupSchema), getRotationSchedule);
+
+router.get('/:id/activity', getActivityFeed);
+router.patch('/:id/status', validate(updateStatusSchema), updateGroupStatus);
 
 export default router;

@@ -6,6 +6,8 @@ import { logger } from '../../config/logger';
 import crypto from 'crypto';
 import redis from '../../config/redis';
 import { AppError } from '../../utils/AppError';
+import { groupService } from '../../services/group.services';
+import { getIo } from '../../config/socket';
 
 export const createGroup = catchAsync(async (req: Request, res: Response) => {
   const { name, description, contributionAmount, frequency, maxCapacity } = req.body;
@@ -80,13 +82,14 @@ export const joinGroup = catchAsync(async (req: Request, res: Response) => {
 
   if (!group) throw new AppError('Group not found.', 404);
 
+  const currentMembers = (group as any).members || [];
   // 3. ENFORCE CAPACITY: Check if the group is full
-  if (group.members.length >= group.maxCapacity) {
+  if (currentMembers.length >= group.maxCapacity) {
     throw new AppError('This group has reached its maximum capacity.', 403);
   }
 
   // 4. PREVENT DUPLICATES: Check if user is already a member
-  const isAlreadyMember = group.members.some((member) => member.userId === userId);
+  const isAlreadyMember = currentMembers.some((member: any) => member.userId === userId);
   if (isAlreadyMember) {
     throw new AppError('You are already a member of this group.', 409);
   }
@@ -102,13 +105,15 @@ export const joinGroup = catchAsync(async (req: Request, res: Response) => {
     },
   });
 
+  await groupService.logAndBroadcast(groupId, 'JOINED', 'A new member joined the group!', userId);
+
   logger.info({ groupId, userId }, 'User joined group via invite code');
   return sendSuccess(res, newMember, `You have successfully joined ${group.name}!`, 200);
 });
 
 
 export const getGroupDetails = catchAsync(async (req: Request, res: Response) => {
-  const groupId = req.params.id;
+  const groupId = req.params.id as string;
   const userId = req.user.id;
 
   // 1. Fetch the enriched group data
@@ -117,7 +122,7 @@ export const getGroupDetails = catchAsync(async (req: Request, res: Response) =>
     include: {
       wallet: true, // Get the total group balance
       contributions: {
-        orderBy: { createdAt: 'desc' },
+        // orderBy: { createdAt: 'desc' },
         take: 5, // Just get the 5 most recent contributions for the dashboard
       },
       members: {
@@ -142,9 +147,9 @@ export const getGroupDetails = catchAsync(async (req: Request, res: Response) =>
   if (!group) {
     throw new AppError('Group not found', 404);
   }
-
+  const currentMembers = (group as any).members || [];
   // 2. 🚨 SECURITY CHECK: Ensure the requesting user is actually a member of this group
-  const isMember = group.members.some((member) => member.userId === userId);
+  const isMember = currentMembers.some((member: any) => member.userId === userId);
   if (!isMember) {
     throw new AppError('You are not authorized to view this group', 403);
   }
@@ -155,7 +160,7 @@ export const getGroupDetails = catchAsync(async (req: Request, res: Response) =>
 
 
 export const updateGroupDetails = catchAsync(async (req: Request, res: Response) => {
-  const groupId = req.params.groupId;
+  const groupId = req.params.groupId as string;
   const { name, description, contributionAmount, frequency, maxCapacity } = req.body;
 
   const group = await prisma.group.update({
@@ -173,7 +178,7 @@ export const updateGroupDetails = catchAsync(async (req: Request, res: Response)
 });
 
 export const getGroupMembers = catchAsync(async (req: Request, res: Response) => {
-  const groupId = req.params.groupId;
+  const groupId = req.params.groupId as string;
 
   const group = await prisma.group.findUnique({
     where: { id: groupId },
@@ -189,7 +194,7 @@ export const getGroupMembers = catchAsync(async (req: Request, res: Response) =>
 
 
 export const generateRotation = catchAsync(async (req: Request, res: Response) => {
-  const groupId = req.params.id;
+  const groupId = req.params.id as string;
   const { mode, startDate } = req.body;
   const userId = req.user.id;
 
@@ -262,7 +267,7 @@ export const generateRotation = catchAsync(async (req: Request, res: Response) =
 
 
 export const getRotationSchedule = catchAsync(async (req: Request, res: Response) => {
-  const groupId = req.params.id;
+  const groupId = req.params.id as string;
 
   const slots = await prisma.rotationSlot.findMany({
     where: { groupId },
@@ -275,4 +280,52 @@ export const getRotationSchedule = catchAsync(async (req: Request, res: Response
   });
 
   return sendSuccess(res, slots, 'Rotation schedule retrieved', 200);
+});
+
+export const getActivityFeed = catchAsync(async (req: Request, res: Response) => {
+  const groupId = req.params.id as string;
+
+  const logs = await prisma.activityLog.findMany({
+    where: { groupId },
+    orderBy: { createdAt: 'desc' },
+    take: 50, // Only fetch the latest 50 events
+    include: {
+      user: { select: { firstName: true, lastName: true, avatar: true } },
+    },
+  });
+
+  return sendSuccess(res, logs, 'Activity feed retrieved', 200);
+});
+
+// --- 👉 NEW: UPDATE GROUP LIFECYCLE STATUS ---
+export const updateGroupStatus = catchAsync(async (req: Request, res: Response) => {
+  const groupId = req.params.id as string;
+  const { status } = req.body; // 'ACTIVE', 'PAUSED', 'COMPLETED'
+  const userId = req.user.id;
+
+  const group = await prisma.group.findUnique({ where: { id: groupId } });
+  if (!group) throw new AppError('Group not found', 404);
+  
+  if (group.creatorId !== userId) {
+    throw new AppError('Only the admin can change the group status', 403);
+  }
+
+  // Update Database
+  const updatedGroup = await prisma.group.update({
+    where: { id: groupId },
+    data: { status },
+  });
+
+  // Log it and broadcast the status change!
+  await groupService.logAndBroadcast(
+    groupId, 
+    'STATUS_UPDATE', 
+    `The group admin changed the status to ${status}`, 
+    userId
+  );
+
+  // Broadcast a specific event so the frontend can update its UI state
+  getIo().to(groupId).emit('groupStatusChanged', { status });
+
+  return sendSuccess(res, updatedGroup, `Group is now ${status}`, 200);
 });

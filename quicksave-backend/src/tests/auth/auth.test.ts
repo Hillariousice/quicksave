@@ -79,19 +79,32 @@ describe('Authentication Flows', () => {
 
   describe('POST /api/v1/auth/logout', () => {
     it('should blacklist the refresh token in Redis', async () => {
-      // Setup fake token in Redis
-      const fakeUserId = 'fake-uuid';
-      await redis.set(`refresh_token:${fakeUserId}`, 'valid-refresh-token');
-
-      // Logout request
-      const res = await request(app).post('/api/v1/auth/logout').send({
-        refreshToken: 'valid-refresh-token',
+      // 1. Create a user and verify them
+      await request(app).post('/api/v1/auth/register').send(testUser);
+      await prisma.user.update({
+        where: { email: testUser.email },
+        data: { isVerified: true },
       });
+
+      // 2. Log in to get REAL tokens
+      const loginRes = await request(app).post('/api/v1/auth/login').send({
+        email: testUser.email,
+        password: testUser.password,
+      });
+
+      const { accessToken, refreshToken } = loginRes.body.data.tokens;
+      const userId = loginRes.body.data.user.id;
+
+      // 3. 👉 FIX 2: Send the logout request WITH the Access Token in the header
+      const res = await request(app)
+        .post('/api/v1/auth/logout')
+        .set('Authorization', `Bearer ${accessToken}`) // Passing the Auth guard!
+        .send({ refreshToken });
 
       expect(res.status).toBe(200);
 
-      // Verify it was deleted from Redis
-      const tokenInRedis = await redis.get(`refresh_token:${fakeUserId}`);
+      // 4. Verify it was actually deleted from Redis
+      const tokenInRedis = await redis.get(`refresh_token:${userId}`);
       expect(tokenInRedis).toBeNull();
     });
   });

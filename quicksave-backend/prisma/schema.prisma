@@ -16,6 +16,7 @@ enum UserStatus {
 enum GroupStatus {
   PENDING
   ACTIVE
+  PAUSED  
   COMPLETED
   CANCELLED
 }
@@ -100,6 +101,7 @@ model User {
   wallet         Wallet?
   notifications  Notification[]
   rotationSlots  RotationSlot[]
+  activityLogs   ActivityLog[]
 
   @@map("users")
 }
@@ -129,6 +131,7 @@ model Group {
   wallet            Wallet?
   contributions     Contribution[]
   rotationSlots     RotationSlot[] 
+  activityLogs ActivityLog[]
 
   createdAt         DateTime      @default(now())
   updatedAt         DateTime      @updatedAt
@@ -200,4 +203,16 @@ model RotationSlot {
 
   @@unique([groupId, position])
   @@unique([groupId, userId])   
+}
+
+model ActivityLog {
+  id        String   @id @default(uuid())
+  groupId   String
+  userId    String?  // Optional: System events won't have a user
+  action    String   // e.g., "JOINED", "CONTRIBUTION", "STATUS_UPDATE"
+  message   String   // e.g., "Amara joined the group"
+  createdAt DateTime @default(now())
+
+  group     Group    @relation(fields: [groupId], references: [id])
+  user      User?    @relation(fields: [userId], references: [id])
 }
