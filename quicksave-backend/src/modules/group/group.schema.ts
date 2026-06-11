@@ -59,3 +59,9 @@ export const updateStatusSchema = z.object({
     status: z.enum(['ACTIVE', 'PAUSED', 'COMPLETED', 'CANCELLED']),
   }),
 });
+
+export const groupParamsSchema = z.object({
+  params: z.object({
+    id: z.string().uuid('Invalid group ID format'),
+  }),
+});

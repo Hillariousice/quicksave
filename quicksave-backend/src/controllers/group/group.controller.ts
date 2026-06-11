@@ -269,17 +269,14 @@ export const generateRotation = catchAsync(async (req: Request, res: Response) =
 export const getRotationSchedule = catchAsync(async (req: Request, res: Response) => {
   const groupId = req.params.id as string;
 
-  const slots = await prisma.rotationSlot.findMany({
-    where: { groupId },
-    orderBy: { position: 'asc' },
-    include: {
-      user: {
-        select: { id: true, firstName: true, lastName: true, avatar: true },
-      },
-    },
-  });
+  // Ensure the group actually exists
+  const group = await prisma.group.findUnique({ where: { id: groupId } });
+  if (!group) throw new AppError('Group not found', 404);
 
-  return sendSuccess(res, slots, 'Rotation schedule retrieved', 200);
+  // Call our new service method!
+  const timelineData = await groupService.getRotationTimeline(groupId);
+
+  return sendSuccess(res, timelineData, 'Rotation timeline retrieved successfully', 200);
 });
 
 export const getActivityFeed = catchAsync(async (req: Request, res: Response) => {
@@ -328,4 +325,123 @@ export const updateGroupStatus = catchAsync(async (req: Request, res: Response) 
   getIo().to(groupId).emit('groupStatusChanged', { status });
 
   return sendSuccess(res, updatedGroup, `Group is now ${status}`, 200);
+});
+
+
+export const makeContribution = catchAsync(async (req: Request, res: Response) => {
+  const groupId = req.params.id as string;
+  const userId = req.user.id;
+
+  // 1. Fetch Group and User data
+  const group = await prisma.group.findUnique({
+    where: { id: groupId },
+    include: { members: true, wallet: true },
+  });
+
+  const userWallet = await prisma.wallet.findUnique({ where: { userId } });
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+
+  if (!group || !group.wallet) throw new AppError('Group or Group Vault not found', 404);
+  if (!userWallet) throw new AppError('User wallet not found', 404);
+
+  // 2. Eligibility Checks
+  if (group.status !== 'ACTIVE') {
+    throw new AppError('You can only contribute to an ACTIVE group.', 400);
+  }
+
+  const isMember = group.members.some((m) => m.userId === userId);
+  if (!isMember) {
+    throw new AppError('You must be a member of this group to contribute', 403);
+  }
+
+  const amountToPay = group.contributionAmount;
+
+  if (userWallet.balance < amountToPay) {
+    throw new AppError(`Insufficient funds. Please fund your wallet with at least ₦${amountToPay}`, 400);
+  }
+
+  // 3. Massive Atomic Transaction
+  // We process 6 database writes at the exact same time. If one fails, they all fail!
+  const reference = `CONT_${crypto.randomBytes(6).toString('hex').toUpperCase()}`;
+
+  const contributionReceipt = await prisma.$transaction(async (tx) => {
+    // A. Deduct from User
+    await tx.wallet.update({
+      where: { id: userWallet.id },
+      data: { balance: { decrement: amountToPay } },
+    });
+
+    // B. Record User Debit
+    await tx.transaction.create({
+      data: {
+        walletId: userWallet.id,
+        amount: amountToPay,
+        type: 'CONTRIBUTION',
+        status: 'SUCCESS',
+        reference: `${reference}_DEBIT`,
+        description: `Contribution to group: ${group.name}`,
+      },
+    });
+
+    // C. Add to Group Vault
+    await tx.wallet.update({
+      where: { id: group.wallet!.id },
+      data: { balance: { increment: amountToPay } },
+    });
+
+    // D. Record Group Credit
+    await tx.transaction.create({
+      data: {
+        walletId: group.wallet!.id,
+        amount: amountToPay,
+        type: 'CONTRIBUTION',
+        status: 'SUCCESS',
+        reference: `${reference}_CREDIT`,
+        description: `Contribution received from ${user?.firstName}`,
+      },
+    });
+
+    // E. Update the Group's Total Counter
+    await tx.group.update({
+      where: { id: groupId },
+      data: { totalContributions: { increment: amountToPay } },
+    });
+
+    // F. Create the Official Contribution Receipt
+    return await tx.contribution.create({
+      data: {
+        userId,
+        groupId,
+        amount: amountToPay,
+        status: 'CONFIRMED',
+        paidAt: new Date(),
+      },
+    });
+  });
+
+  // 4. Real-time Broadcasting! (Outside the transaction because it hits Redis/WebSockets)
+  const message = `${user?.firstName} ${user?.lastName} just contributed ₦${amountToPay}! 🎉`;
+  await groupService.logAndBroadcast(groupId, 'CONTRIBUTION', message, userId);
+
+  logger.info({ userId, groupId, amount: amountToPay }, 'Contribution processed successfully');
+
+  return sendSuccess(res, contributionReceipt, 'Contribution successful!', 200);
+});
+
+export const triggerPayout = catchAsync(async (req: Request, res: Response) => {
+  const groupId = req.params.id as string;
+  const userId = req.user.id;
+
+  const group = await prisma.group.findUnique({ where: { id: groupId } });
+  if (!group) throw new AppError('Group not found', 404);
+
+  // Security: Only the Admin can manually trigger a payout
+  if (group.creatorId !== userId) {
+    throw new AppError('Only the group admin can trigger payouts', 403);
+  }
+
+  // Toss the heavy lifting to the Background Queue
+  await payoutQueue.add({ groupId });
+
+  return sendSuccess(res, null, 'Payout job has been queued and is processing...', 200);
 });

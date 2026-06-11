@@ -1,13 +1,13 @@
 import { Router } from 'express';
 import { requireAuth } from '../middleware/auth';
 import { validate } from '../middleware/validate';
-import { createGroupSchema, generateRotationSchema, getGroupSchema, joinGroupSchema, updateStatusSchema } from '../modules/group/group.schema';
-import { createGroup, joinGroup, getGroupDetails, getGroupMembers, generateRotation, getRotationSchedule, getActivityFeed, updateGroupStatus } from '../controllers/group/group.controller';
+import { createGroupSchema, generateRotationSchema, getGroupSchema, groupParamsSchema, joinGroupSchema, updateStatusSchema } from '../modules/group/group.schema';
+import { createGroup, joinGroup, getGroupDetails, getGroupMembers, generateRotation, getRotationSchedule, getActivityFeed, updateGroupStatus, makeContribution, triggerPayout, } from '../controllers/group/group.controller';
 
 
 const router = Router();
 
-// 👉 Every route in the group module MUST be protected by requireAuth!
+
 router.use(requireAuth);
 
 // POST /api/v1/groups
@@ -21,5 +21,8 @@ router.get('/:id/rotation', validate(getGroupSchema), getRotationSchedule);
 
 router.get('/:id/activity', getActivityFeed);
 router.patch('/:id/status', validate(updateStatusSchema), updateGroupStatus);
+
+router.post('/:id/contributions', validate(groupParamsSchema), makeContribution);
+router.post('/:id/payout/trigger', validate(groupParamsSchema), triggerPayout);
 
 export default router;

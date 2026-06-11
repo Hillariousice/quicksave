@@ -177,6 +177,7 @@ model Wallet {
   groupId   String?  @unique 
   user      User?     @relation(fields: [userId], references: [id])
   group     Group?   @relation(fields: [groupId], references: [id])
+  transactions Transaction[] 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -215,4 +216,19 @@ model ActivityLog {
 
   group     Group    @relation(fields: [groupId], references: [id])
   user      User?    @relation(fields: [userId], references: [id])
+}
+
+model Transaction {
+  id              String            @id @default(uuid())
+  amount          Float
+  type            TransactionType   // CONTRIBUTION, WITHDRAWAL, PAYOUT, REFUND, FEE
+  status          TransactionStatus @default(PENDING)
+  reference       String            @unique // Unique payment reference (e.g., from Paystack)
+  description     String?
+  
+  walletId        String
+  wallet          Wallet            @relation(fields: [walletId], references: [id])
+  
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
 }
