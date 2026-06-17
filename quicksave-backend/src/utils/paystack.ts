@@ -17,7 +17,7 @@ export const paystack = {
       body: JSON.stringify({
         email,
         amount: amountInNaira * 100, // Paystack expects Kobo (lowest denomination)
-        metadata: { userId }, // We pass userId so the Webhook (Day 23) knows who to fund!
+        metadata: { userId }, // We pass userId so the Webhook knows who to fund!
       }),
     });
     

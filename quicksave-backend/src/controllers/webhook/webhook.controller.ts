@@ -53,7 +53,7 @@ export const paystackWebhook = async (req: Request, res: Response) => {
       // Paystack sends amounts in the lowest currency unit (Kobo). ₦50,000 comes as 5000000.
       const amountInNaira = amount / 100;
 
-      // 7. Safely Credit the Wallet (This uses our Day 22 atomic transaction!)
+      // 7. Safely Credit the Wallet 
       await walletService.creditWallet(
         wallet.id,
         amountInNaira,

@@ -123,7 +123,7 @@ describe('Group Module Integration Tests', () => {
         .set('Authorization', `Bearer ${memberToken}`);
 
       expect(timelineRes.status).toBe(200);
-      // Verify our enriched "Senior Dev" data structure from Day 20!
+      // Verify our enriched data structure !
       expect(timelineRes.body.data).toHaveProperty('currentTurn');
       expect(timelineRes.body.data).toHaveProperty('progress');
       expect(timelineRes.body.data).toHaveProperty('timeline');

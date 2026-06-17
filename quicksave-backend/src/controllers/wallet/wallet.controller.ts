@@ -47,7 +47,7 @@ export const withdrawFunds = catchAsync(async (req: Request, res: Response) => {
   const { amount, accountNumber, bankCode, accountName } = req.body;
   const userId = req.user.id;
 
-  // 1. Check balance and lock funds atomically (from Day 22)
+  // 1. Check balance and lock funds atomically
   const wallet = await walletService.getWalletByUserId(userId);
   
   if (wallet.balance < amount) {

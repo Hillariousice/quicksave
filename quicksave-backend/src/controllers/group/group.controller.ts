@@ -8,6 +8,7 @@ import redis from '../../config/redis';
 import { AppError } from '../../utils/AppError';
 import { groupService } from '../../services/group.services';
 import { getIo } from '../../config/socket';
+import { payoutQueue } from '../../queues/payout.queue';
 
 export const createGroup = catchAsync(async (req: Request, res: Response) => {
   const { name, description, contributionAmount, frequency, maxCapacity } = req.body;

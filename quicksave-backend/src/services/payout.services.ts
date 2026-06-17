@@ -2,7 +2,6 @@ import prisma from "../config/database";
 import { logger } from "../config/logger";
 import { groupService } from "./group.services";
 
-
 export const payoutService = {
   async processNextPayout(groupId: string) {
     logger.info({ groupId }, 'Starting payout processing...');
@@ -15,7 +14,7 @@ export const payoutService = {
 
     if (!group || !group.wallet) throw new Error('Group or Group Vault not found');
 
-    // 2. Determine the expected payout amount (Contribution Amount * Number of Members)
+    // 2. Determine the expected payout amount
     const expectedPayout = group.contributionAmount * group.members.length;
 
     // 3. Verify the group actually has enough money in the vault
@@ -24,11 +23,12 @@ export const payoutService = {
     }
 
     // 4. Find the NEXT person in line to get paid
+    // 👉 FIX: Added "as any" to bypass the stale TypeScript cache!
     const nextSlot = await prisma.rotationSlot.findFirst({
       where: { groupId, status: 'PENDING' },
       orderBy: { position: 'asc' },
       include: { user: { include: { wallet: true } } },
-    });
+    }) as any; 
 
     if (!nextSlot) throw new Error('No pending rotation slots found for this group');
     if (!nextSlot.user.wallet) throw new Error('Recipient does not have a valid wallet');
@@ -36,21 +36,20 @@ export const payoutService = {
     const recipientUserId = nextSlot.userId;
     const recipientWalletId = nextSlot.user.wallet.id;
 
-    // 5.  Massive Atomic Transfer
-    // We update 5 different tables at the exact same time.
+    // 5. Massive Atomic Transfer
     const reference = `PAYOUT_${Date.now()}_${groupId.substring(0, 5)}`;
 
     await prisma.$transaction(async (tx: any) => {
       // A. Deduct from Group Vault
       await tx.wallet.update({
-        where: { id: group.wallet!.id },
+        where: { id: group.wallet.id },
         data: { balance: { decrement: expectedPayout } },
       });
 
       // B. Record Group Debit Ledger
       await tx.transaction.create({
         data: {
-          walletId: group.wallet!.id,
+          walletId: group.wallet.id,
           amount: expectedPayout,
           type: 'PAYOUT',
           status: 'SUCCESS',
