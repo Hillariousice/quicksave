@@ -190,12 +190,12 @@ export default function HomeScreen() {
       </ScrollView>
 
       {/* MOCK BOTTOM TAB BAR (Matches Figma) */}
-      <View style={[styles.bottomNav, { backgroundColor: theme.background, borderTopColor: theme.inputBorder }]}>
+      {/* <View style={[styles.bottomNav, { backgroundColor: theme.background, borderTopColor: theme.inputBorder }]}>
         <NavItem icon="home" label="Home" isActive theme={theme} />
         <NavItem icon="users" label="Groups" theme={theme} />
         <NavItem icon="pie-chart" label="Savings" theme={theme} />
         <NavItem icon="user" label="Profile" theme={theme} />
-      </View>
+      </View> */}
     </SafeAreaView>
   );
 }
@@ -261,7 +261,7 @@ const styles = StyleSheet.create({
   // Activity
   activityContainer: { gap: 16 },
 
-  // Bottom Nav
-  bottomNav: { position: 'absolute', bottom: 0, left: 0, right: 0, flexDirection: 'row', justifyContent: 'space-around', paddingTop: 16, paddingBottom: 32, borderTopWidth: 1 },
+  // // Bottom Nav
+  // bottomNav: { position: 'absolute', bottom: 0, left: 0, right: 0, flexDirection: 'row', justifyContent: 'space-around', paddingTop: 16, paddingBottom: 32, borderTopWidth: 1 },
 
 });

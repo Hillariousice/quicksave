@@ -10,6 +10,7 @@ import webhookRoutes from './routes/webhook.router';
 import { apiLimiter } from './middleware/rateLimiter';
 
 const app = express();
+const PORT = process.env.PORT || 3000;
 
 app.use(helmet()); 
 app.use(cors()); 
@@ -30,4 +31,10 @@ app.use('/api/v1/webhooks', webhookRoutes);
 // Global Error Handler MUST be last
 app.use(errorHandler);
 
+
+// Explicitly bind to '0.0.0.0' to allow external network access
+app.listen(Number(PORT), '0.0.0.0', () => {
+  console.log(`🚀 Server ready at http://192.168.1.172:${PORT}`);
+  console.log(`Local access: http://localhost:${PORT}`);
+});
 export default app;

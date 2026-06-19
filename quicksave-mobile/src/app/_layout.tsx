@@ -40,7 +40,7 @@ function RootNavigator() {
       router.replace('/'); 
     } else if (isAuthenticated && inAuthGroup) {
       // Logged in but trying to view Login/Register? Send them to the Dashboard
-      router.replace('/home');
+      router.replace('/(tabs)');
     }
   }, [isAuthenticated, isLoading, segments]);
 
@@ -54,7 +54,8 @@ function RootNavigator() {
       <Stack.Screen name="auth/register" />
       <Stack.Screen name="auth/verify" />
       <Stack.Screen name="auth/biometrics" />
-      <Stack.Screen name="home" />
+      <Stack.Screen name="notification" />
+      <Stack.Screen name="(tabs)" />
     </Stack>
   );
 }

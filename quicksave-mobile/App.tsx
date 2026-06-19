@@ -8,7 +8,7 @@ export default function App() {
   return (
     <Provider store={store}>
       <View style={styles.container}>
-        <Text style={styles.title}>Ajo Mobile is Ready! 🚀</Text>
+        <Text style={styles.title}>Quicksave Mobile is Ready! 🚀</Text>
         <StatusBar style="auto" />
       </View>
     </Provider>

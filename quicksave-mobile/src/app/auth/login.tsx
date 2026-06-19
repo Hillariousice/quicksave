@@ -38,7 +38,9 @@ export default function LoginScreen() {
     try {
       // 1. Hit your Express Backend
       const response = await api.post('/auth/login', { email, password });
+      console.log('Login Response:', response.data);
       const { user, tokens } = response.data.data;
+       
 
       // Save tokens securely to the hardware vault
       await SecureStore.setItemAsync('accessToken', tokens.accessToken);
@@ -53,12 +55,24 @@ export default function LoginScreen() {
         router.replace('/auth/biometrics'); 
       } else {
         // If 'true' or 'false', they already made a choice. Go straight to Home.
-        router.replace('/home'); 
+        router.replace('/(tabs)'); 
       }
 
     } catch (error: any) {
-      const message = error.response?.data?.message || 'Invalid credentials. Please try again.';
+      console.error('Login Error Object:', error);
+      // const message = error.response?.data?.message || 'Invalid credentials. Please try again.';
+      // setErrorMsg(message);
+
+       if (error.response) {
+      // Server responded with 4xx or 5xx
+      const message = error.response.data?.message || 'Invalid credentials.';
       setErrorMsg(message);
+    } else if (error.request) {
+      // Request was made but no response received (Network Error)
+      setErrorMsg('Cannot connect to server. Check your Wi-Fi/IP.');
+    } else {
+      setErrorMsg('An unexpected error occurred.');
+    }
     } finally {
       setLoading(false);
     }
@@ -71,7 +85,7 @@ export default function LoginScreen() {
       const token = await SecureStore.getItemAsync('accessToken');
       if (token) {
         // Just bypass login if they already have a valid token stored
-        router.replace('/home');
+        router.replace('/(tabs)');
       } else {
         setErrorMsg('Please log in with your password first.');
       }
