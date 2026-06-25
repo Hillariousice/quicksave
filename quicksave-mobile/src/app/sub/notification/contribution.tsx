@@ -85,7 +85,7 @@ export default function ContributionDetailScreen() {
       <View style={styles.footer}>
         <TouchableOpacity 
           style={[styles.primaryButton, { backgroundColor: theme.primary }]}
-          onPress={() => router.push('/home')}
+          onPress={() => router.push('/(tabs)/groups')}
         >
           <Text style={styles.primaryButtonText}>Back to Groups →</Text>
         </TouchableOpacity>

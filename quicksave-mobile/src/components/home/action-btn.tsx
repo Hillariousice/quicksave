@@ -2,8 +2,8 @@ import { TouchableOpacity, View, Text, StyleSheet } from "react-native";
 import React from "react";
 import { Feather } from "@expo/vector-icons";
 
-const ActionBtn = ({ icon, label, theme }: { icon: any, label: string, theme: any }) => (
-  <TouchableOpacity style={styles.actionBtn}>
+const ActionBtn = ({ icon, label, theme, onPress }: { icon: any, label: string, theme: any, onPress?: () => void }) => (
+  <TouchableOpacity style={styles.actionBtn} onPress={onPress}>
     <View style={[styles.actionIconBg, { backgroundColor: theme.inputBg }]}>
       <Feather name={icon} size={20} color={theme.text} />
     </View>

@@ -24,6 +24,7 @@ export default function HomeScreen() {
   // Local State
   const [showBalance, setShowBalance] = useState(true);
   const [wallet, setWallet] = useState<any>(null);
+  const [group, setGroup] = useState<any>(null);
   const [transactions, setTransactions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -32,13 +33,16 @@ export default function HomeScreen() {
     const fetchDashboardData = async () => {
       try {
         // Hitting the Day 22 Wallet endpoints
-        const [walletRes, txRes] = await Promise.all([
+        const [walletRes, txRes, groupRes] = await Promise.all([
           api.get('/wallets'),
-          api.get('/wallets/transactions')
+          api.get('/wallets/transactions'),
+          api.get('/groups')
         ]);
         
         setWallet(walletRes.data.data);
         setTransactions(txRes.data.data.slice(0, 3)); // Grab only top 3 for recent activity
+        setGroup(groupRes.data.data);
+        
       } catch (error) {
         console.error("Failed to fetch dashboard data", error);
       } finally {
@@ -110,18 +114,24 @@ export default function HomeScreen() {
           <ActionBtn icon="arrow-up" label="Contribute" theme={theme} />
           <ActionBtn icon="arrow-down" label="Fund" theme={theme} />
           <ActionBtn icon="external-link" label="Withdraw" theme={theme} />
-          <ActionBtn icon="users" label="Invite" theme={theme} />
+          <ActionBtn icon="users" label="Invite" theme={theme}   onPress={() => {
+              if (group?.id) {
+                router.push({pathname:'/sub/groups/[id]/invite-member', params: {id: group.id}});
+              } else {
+                console.log("No group found to invite to!");
+              }
+            }} />
         </View>
 
         {/* ACTIVE GROUPS */}
         <View style={styles.sectionHeader}>
           <Text style={[styles.sectionTitle, { color: theme.text }]}>Active Groups</Text>
-          <TouchableOpacity><Text style={styles.viewAll}>View All</Text></TouchableOpacity>
+          <TouchableOpacity onPress={() => router.push('/(tabs)/groups')}><Text style={styles.viewAll}>View All</Text></TouchableOpacity>
         </View>
 
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.groupsScroll}>
           {/* Mock Group Card 1 */}
-          <View style={[styles.groupCard, { backgroundColor: theme.inputBg }]}>
+          <TouchableOpacity style={[styles.groupCard, { backgroundColor: theme.inputBg }]} onPress={() => router.push(`/sub/groups/${group?.id}`)}>
             <View style={styles.groupCardHeader}>
               <FontAwesome5 name="users" size={16} color={theme.textSecondary} />
               <Text style={styles.groupBadge}>Ajo</Text>
@@ -138,10 +148,10 @@ export default function HomeScreen() {
               </View>
             </View>
             <Text style={styles.nextDate}>🗓 Next: Oct 15</Text>
-          </View>
+          </TouchableOpacity>
 
           {/* Mock Group Card 2 */}
-          <View style={[styles.groupCard, { backgroundColor: theme.inputBg }]}>
+          <TouchableOpacity style={[styles.groupCard, { backgroundColor: theme.inputBg }]} onPress={() => router.push(`/sub/groups/${group?.id}`)}>
             <View style={styles.groupCardHeader}>
               <FontAwesome5 name="home" size={16} color={theme.textSecondary} />
               <Text style={styles.groupBadge}>Family</Text>
@@ -158,7 +168,7 @@ export default function HomeScreen() {
               </View>
             </View>
             <Text style={styles.nextDate}>🗓 Next: Nov 02</Text>
-          </View>
+          </TouchableOpacity>
         </ScrollView>
 
         {/* UPCOMING PAYOUT HIGHLIGHT */}
@@ -189,13 +199,6 @@ export default function HomeScreen() {
 
       </ScrollView>
 
-      {/* MOCK BOTTOM TAB BAR (Matches Figma) */}
-      {/* <View style={[styles.bottomNav, { backgroundColor: theme.background, borderTopColor: theme.inputBorder }]}>
-        <NavItem icon="home" label="Home" isActive theme={theme} />
-        <NavItem icon="users" label="Groups" theme={theme} />
-        <NavItem icon="pie-chart" label="Savings" theme={theme} />
-        <NavItem icon="user" label="Profile" theme={theme} />
-      </View> */}
     </SafeAreaView>
   );
 }

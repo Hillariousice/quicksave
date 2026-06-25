@@ -1,6 +1,7 @@
 import React from 'react';
 import { 
-  View, Text, StyleSheet, SafeAreaView, TouchableOpacity, useColorScheme 
+  View, Text, StyleSheet, SafeAreaView, TouchableOpacity, useColorScheme, 
+  ScrollView
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { FontAwesome5, Feather, MaterialCommunityIcons } from '@expo/vector-icons';
@@ -26,9 +27,11 @@ export default function PayoutAlertDetailScreen() {
           <FontAwesome5 name="arrow-left" size={18} color={theme.primary} />
           <Text style={[styles.headerTitle, { color: theme.text }]}>Payout Alert</Text>
         </TouchableOpacity>
+        {/* <TouchableOpacity onPress={() => router.push('/sub/notification')}>
         <Feather name="bell" size={20} color={theme.textSecondary} />
+        </TouchableOpacity> */}
       </View>
-
+<ScrollView style={{flex: 1}}>
       <View style={styles.content}>
         {/* BIG ICON */}
         <View style={styles.iconWrapper}>
@@ -88,7 +91,7 @@ export default function PayoutAlertDetailScreen() {
           </Text>
         </View>
       </View>
-
+</ScrollView>
       {/* FOOTER ACTIONS */}
       <View style={styles.footer}>
         <TouchableOpacity style={[styles.primaryButton, { backgroundColor: theme.primary }]}>
@@ -96,7 +99,7 @@ export default function PayoutAlertDetailScreen() {
           <Text style={styles.primaryButtonText}>Withdraw to Bank</Text>
         </TouchableOpacity>
         
-        <TouchableOpacity style={styles.secondaryButton}>
+        <TouchableOpacity style={styles.secondaryButton} onPress={()=> router.push({pathname:'/sub/groups/[id]', params: {id: notification?.data?.group_id}})}>
           <Text style={[styles.secondaryButtonText, { color: theme.textSecondary }]}>View Group Details</Text>
         </TouchableOpacity>
       </View>
@@ -131,7 +134,7 @@ const styles = StyleSheet.create({
   statusDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#FF8C00' },
   statusText: { color: '#FF8C00', fontSize: 12, fontWeight: 'bold' },
   
-  securityNote: { flexDirection: 'row', paddingHorizontal: 10, gap: 12, alignItems: 'center' },
+  securityNote: { flexDirection: 'row', paddingHorizontal: 10, gap: 12, alignItems: 'center' , marginBottom: 20},
   shieldIcon: { width: 24, height: 24, borderRadius: 12, backgroundColor: '#FF8C0020', justifyContent: 'center', alignItems: 'center' },
   securityText: { flex: 1, fontSize: 12, lineHeight: 18 },
 

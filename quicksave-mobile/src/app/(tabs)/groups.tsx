@@ -42,94 +42,93 @@ export default function GroupsScreen() {
     <View style={[styles.header, {backgroundColor: theme.background}]}>
       {/* <View style={{ width: 24 }} /> Spacer to center the logo */}
       <View style={styles.logoContainer}>
-        <FontAwesome5 name="shield-alt" size={16} color="#FF8C00" />
+        <FontAwesome5 name="shield-alt" size={16} color={theme.primary} />
         <Text style={[styles.logoText,{ color: theme.text }]}>QUICKSAVE</Text>
       </View>
-      <TouchableOpacity>
-        <Feather name="bell" size={20} color={theme.textSecondary }/>
+      <TouchableOpacity onPress={() => router.push('/sub/notification')}>
+        <Feather name="bell" size={20} color={theme.text }/>
       </TouchableOpacity>
     </View>
   );
 
   const Tabs = () => (
-    <View style={[styles.tabsContainer,{ backgroundColor: theme.background }]}>
+    <View style={[styles.tabsContainer,{ backgroundColor: theme.background,  borderBottomColor: theme.inputBorder }]}>
       <TouchableOpacity 
-        style={[styles.tab, activeTab === 'Active' && styles.activeTab]}
+        style={[styles.tab, activeTab === 'Active' && [styles.activeTab, { borderBottomColor: theme.primary }]]}
         onPress={() => setActiveTab('Active')}
       >
-        <Text style={[styles.tabText, activeTab === 'Active' && styles.activeTabText]}>Active</Text>
+        <Text style={[styles.tabText, { color: theme.textSecondary },activeTab === 'Active' && { color: theme.primary, fontWeight: 'bold' }]}>Active</Text>
       </TouchableOpacity>
       <TouchableOpacity 
-        style={[styles.tab, activeTab === 'Completed' && styles.activeTab]}
+        style={[styles.tab,activeTab === 'Completed' && [styles.activeTab, { borderBottomColor: theme.primary }]]}
         onPress={() => setActiveTab('Completed')}
       >
-        <Text style={[styles.tabText, activeTab === 'Completed' && styles.activeTabText]}>Completed</Text>
+        <Text style={[styles.tabText, { color: theme.textSecondary }, activeTab === 'Completed' &&  { color: theme.primary, fontWeight: 'bold' }]}>Completed</Text>
       </TouchableOpacity>
     </View>
   );
 
   const GroupCard = ({ title, subtitle, progress, nextDate, membersCount }: any) => (
-    <View style={[styles.card,{ backgroundColor: theme.background }]}>
+    <View style={[styles.card, { backgroundColor: theme.inputBg, borderColor: theme.inputBorder }]}>
       <View style={styles.cardHeader}>
         <View>
           <Text style={[styles.cardTitle, { color: theme.text }]}>{title}</Text>
-          <Text style={[styles.cardSubtitle, {color: theme.textSecondary}]}>{subtitle}</Text>
+          <Text style={[styles.cardSubtitle, { color: theme.textSecondary }]}>{subtitle}</Text>
         </View>
-        <View style={styles.statusBadge}>
-          <Text style={styles.statusText}>ACTIVE</Text>
+        <View style={[styles.statusBadge, { backgroundColor: `${theme.primary}15` }]}>
+          <Text style={[styles.statusText, { color: theme.primary }]}>ACTIVE</Text>
         </View>
       </View>
 
       <View style={styles.progressContainer}>
         <View style={styles.progressRow}>
-          <Text style={styles.progressLabel}>PROGRESS</Text>
-          <Text style={styles.progressValue}>{progress}%</Text>
+          <Text style={[styles.progressLabel, { color: theme.textSecondary }]}>PROGRESS</Text>
+          <Text style={[styles.progressValue, { color: theme.primary }]}>{progress}%</Text>
         </View>
-        <View style={styles.progressBarBg}>
-          <View style={[styles.progressBarFill, { width: `${progress}%` }]} />
+        <View style={[styles.progressBarBg, { backgroundColor: colorScheme === 'dark' ? '#111' : '#F3F4F6' }]}>
+          <View style={[styles.progressBarFill, { width: `${progress}%`, backgroundColor: theme.primary }]} />
         </View>
       </View>
 
       <View style={styles.nextPayoutContainer}>
         <View>
-          <Text style={styles.nextPayoutLabel}>Next Payout</Text>
-          <Text style={styles.nextPayoutDate}>{nextDate}</Text>
+          <Text style={[styles.nextPayoutLabel, { color: theme.textSecondary }]}>Next Payout</Text>
+          <Text style={[styles.nextPayoutDate, { color: theme.text }]}>{nextDate}</Text>
         </View>
         <View style={styles.avatarGroup}>
           {/* Overlapping Mock Avatars */}
-          <Image source={{ uri: 'https://i.pravatar.cc/150?img=1' }} style={[styles.avatar, { zIndex: 3 }]} />
-          <Image source={{ uri: 'https://i.pravatar.cc/150?img=2' }} style={[styles.avatar, { zIndex: 2, marginLeft: -10 }]} />
-          <Image source={{ uri: 'https://i.pravatar.cc/150?img=3' }} style={[styles.avatar, { zIndex: 1, marginLeft: -10 }]} />
-          <View style={[styles.avatarCount, { marginLeft: -10 }]}>
-            <Text style={styles.avatarCountText}>+{membersCount}</Text>
+          <Image source={{ uri: 'https://i.pravatar.cc/150?img=1' }} style={[styles.avatar, { borderColor: theme.inputBg, zIndex: 3 }]} />
+          <Image source={{ uri: 'https://i.pravatar.cc/150?img=2' }} style={[styles.avatar, { borderColor: theme.inputBg, zIndex: 2, marginLeft: -10 }]} />
+          <Image source={{ uri: 'https://i.pravatar.cc/150?img=3' }} style={[styles.avatar, { borderColor: theme.inputBg, zIndex: 1, marginLeft: -10 }]} />
+          <View style={[styles.avatarCount, { backgroundColor: colorScheme === 'dark' ? '#111' : '#F3F4F6', borderColor: theme.inputBg, marginLeft: -10 }]}>
+            <Text style={[styles.avatarCountText, { color: theme.textSecondary }]}>+{membersCount}</Text>
           </View>
         </View>
       </View>
 
       <TouchableOpacity 
-        style={styles.detailsButton}
-        // In a real app, pass the group ID here: router.push(`/groups/${id}`)
-        onPress={() => console.log('View Details')} 
+        style={[styles.detailsButton, { borderColor: theme.inputBorder }]}
+        onPress={() =>router.push({pathname:'/sub/groups/[id]', params: {id: groups?.id}})} 
       >
-        <Text style={styles.detailsButtonText}>View Details</Text>
+        <Text style={[styles.detailsButtonText, { color: theme.text }]}>View Details</Text>
       </TouchableOpacity>
     </View>
   );
 
   const CreateGroupPromoCard = () => (
-    <TouchableOpacity style={styles.promoCard} onPress={() => console.log('Create Group')}>
-      <View style={styles.promoIconBg}>
+    <TouchableOpacity style={[styles.promoCard, { backgroundColor: theme.inputBg, borderColor: theme.primary }]} onPress={() => router.push('/sub/groups/create-group')}>
+      <View style={[styles.promoIconBg, { backgroundColor: theme.primary }]}>
         <Feather name="plus" size={24} color="#FFF" />
       </View>
-      <Text style={styles.promoTitle}>Start a New Group</Text>
-      <Text style={styles.promoSubtitle}>Pool resources with friends or colleagues securely.</Text>
+      <Text style={[styles.promoTitle, { color: theme.text }]}>Start a New Group</Text>
+      <Text style={[styles.promoSubtitle, { color: theme.textSecondary }]}>Pool resources with friends or colleagues securely.</Text>
     </TouchableOpacity>
   );
 
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#FF8C00" />
+      <View style={[styles.loadingContainer, { backgroundColor: theme.background }]}>
+        <ActivityIndicator size="large" color={theme.primary} />
       </View>
     );
   }
@@ -140,9 +139,9 @@ export default function GroupsScreen() {
       
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         
-        <View style={styles.pageTitleContainer}>
-          <Text style={styles.pageTitle}>My Groups</Text>
-          <Text style={styles.pageSubtitle}>Manage your savings circles and payout schedules.</Text>
+        <View style={[styles.pageTitleContainer, { backgroundColor: theme.background }]}>
+          <Text style={[styles.pageTitle, { color: theme.text }]}>My Groups</Text>
+          <Text style={[styles.pageSubtitle, { color: theme.textSecondary }]}>Manage your savings circles and payout schedules.</Text>
         </View>
 
         <Tabs />
@@ -179,13 +178,13 @@ export default function GroupsScreen() {
           </View>
         ) : (
           <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>No completed groups yet.</Text>
+            <Text style={[styles.emptyText, { color: theme.textSecondary }]}>No completed groups yet.</Text>
           </View>
         )}
       </ScrollView>
 
       {/* Floating Action Button (FAB) from the Figma design */}
-      <TouchableOpacity style={styles.fab} onPress={() => console.log('Create Group')}>
+      <TouchableOpacity style={[styles.fab, { backgroundColor: theme.primary }]} onPress={() => router.push('/sub/groups/create-group')}>
         <Feather name="plus" size={24} color="#FFF" />
       </TouchableOpacity>
     </SafeAreaView>

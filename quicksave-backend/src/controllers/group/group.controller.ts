@@ -446,3 +446,63 @@ export const triggerPayout = catchAsync(async (req: Request, res: Response) => {
 
   return sendSuccess(res, null, 'Payout job has been queued and is processing...', 200);
 });
+
+export const inviteMembers = catchAsync(async (req: Request, res: Response) => {
+  const groupId = req.params.id as string;
+  const { userIds } = req.body; // Array of selected user IDs
+  const adminId = req.user.id;
+
+  const group = await prisma.group.findUnique({
+    where: { id: groupId },
+    include: { members: true },
+  });
+
+  if (!group) throw new AppError('Group not found', 404);
+  if (group.creatorId !== adminId) throw new AppError('Only the admin can invite members', 403);
+
+  // 1. Capacity Check
+  if (group.members.length + userIds.length > group.maxCapacity) {
+    throw new AppError(`Cannot invite. Group only has ${group.maxCapacity - group.members.length} slots left.`, 400);
+  }
+
+  // 2. Filter out users who are already in the group (or already invited)
+  const existingUserIds = group.members.map((m) => m.userId);
+  const newIdsToInvite = userIds.filter((id: string) => !existingUserIds.includes(id));
+
+  if (newIdsToInvite.length === 0) {
+    return sendSuccess(res, null, 'All selected users are already invited or in the group.', 200);
+  }
+
+  // 3. Atomic Transaction: Create PENDING members and Notifications
+  await prisma.$transaction(async (tx: any) => {
+    // A. Create the PENDING group members
+    await tx.groupMember.createMany({
+      data: newIdsToInvite.map((id: string) => ({
+        groupId,
+        userId: id,
+        role: 'MEMBER',
+        status: 'PENDING', // PENDING means it's an invite!
+      })),
+    });
+
+    // B. Create Notifications for each user
+    await tx.notification.createMany({
+      data: newIdsToInvite.map((id: string) => ({
+        userId: id,
+        type: 'GROUP_INVITE',
+        title: 'Group Invitation',
+        message: `You have been invited to join ${group.name}`,
+        metadata: { groupId },
+      })),
+    });
+  });
+
+  // 4. Real-Time Socket Event
+  // (Assuming your mobile app tells users to join a socket room matching their User ID on login)
+  const io = getIo();
+  newIdsToInvite.forEach((id: string) => {
+    io.to(id).emit('newNotification', { title: 'New Invite', message: `You were invited to ${group.name}` });
+  });
+
+  return sendSuccess(res, null, `Successfully invited ${newIdsToInvite.length} members!`, 200);
+});

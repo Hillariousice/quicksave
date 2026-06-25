@@ -2,7 +2,8 @@ import { Router } from 'express';
 import { requireAuth } from '../middleware/auth';
 import { validate } from '../middleware/validate';
 import { createGroupSchema, generateRotationSchema, getGroupSchema, groupParamsSchema, joinGroupSchema, updateStatusSchema } from '../modules/group/group.schema';
-import { createGroup, joinGroup, getGroupDetails, getGroupMembers, generateRotation, getRotationSchedule, getActivityFeed, updateGroupStatus, makeContribution, triggerPayout, } from '../controllers/group/group.controller';
+import { createGroup, joinGroup, getGroupDetails, getGroupMembers, generateRotation, getRotationSchedule, getActivityFeed, updateGroupStatus, makeContribution, triggerPayout,inviteMembers } from '../controllers/group/group.controller';
+import { searchUsers } from '../controllers/user/user.controller';
 
 
 const router = Router();
@@ -24,5 +25,8 @@ router.patch('/:id/status', validate(updateStatusSchema), updateGroupStatus);
 
 router.post('/:id/contributions', validate(groupParamsSchema), makeContribution);
 router.post('/:id/payout/trigger', validate(groupParamsSchema), triggerPayout);
+
+router.get('/users/search', searchUsers);
+router.post('/:id/invites', inviteMembers);
 
 export default router;

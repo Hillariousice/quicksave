@@ -3,7 +3,7 @@ import {
   View, Text, StyleSheet, SafeAreaView, TouchableOpacity, Image, useColorScheme 
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { FontAwesome5, Feather, MaterialIcons } from '@expo/vector-icons';
+import { FontAwesome5, Feather, MaterialIcons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { Colors } from '@/theme/Colors';
 
 export default function NewMemberDetailScreen() {
@@ -100,7 +100,7 @@ export default function NewMemberDetailScreen() {
           <Text style={styles.primaryButtonText}>Say Hello</Text>
         </TouchableOpacity>
         
-        <TouchableOpacity style={[styles.secondaryButton, { borderColor: theme.inputBorder }]}>
+        <TouchableOpacity style={[styles.secondaryButton, { borderColor: theme.inputBorder }]} onPress={()=> router.push(`/sub/groups/${notification?.data?.group_id}`)}>
           <Text style={[styles.secondaryButtonText, { color: theme.textSecondary }]}>View Group</Text>
         </TouchableOpacity>
       </View>

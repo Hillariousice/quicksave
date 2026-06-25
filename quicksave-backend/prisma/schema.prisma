@@ -77,6 +77,12 @@ enum PayoutStatus {
   FAILED
 }
 
+enum InviteStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+}
+
 
 
 model User {
@@ -103,6 +109,9 @@ model User {
   rotationSlots  RotationSlot[]
   activityLogs   ActivityLog[]
 
+  sentInvites     GroupInvite[]   @relation("SentInvites")
+  receivedInvites GroupInvite[]   @relation("ReceivedInvites")
+
   @@map("users")
 }
 
@@ -126,12 +135,14 @@ model Group {
   status            GroupStatus   @default(PENDING)
   creatorId         String
 
-  creator           User          @relation("GroupCreator", fields: [creatorId], references: [id])
+  creator            User          @relation("GroupCreator", fields: [creatorId], references: [id]) 
   members           GroupMember[]
   wallet            Wallet?
   contributions     Contribution[]
   rotationSlots     RotationSlot[] 
   activityLogs ActivityLog[]
+
+  invites            GroupInvite[]
 
   createdAt         DateTime      @default(now())
   updatedAt         DateTime      @updatedAt
@@ -235,4 +246,21 @@ model Transaction {
   
   createdAt       DateTime          @default(now())
   updatedAt       DateTime          @updatedAt
+}
+
+model GroupInvite {
+  id        String       @id @default(uuid())
+  groupId   String
+  inviterId String
+  inviteeId String
+  status    InviteStatus @default(PENDING)
+  
+  group     Group        @relation(fields: [groupId], references: [id])
+  inviter   User         @relation("SentInvites", fields: [inviterId], references: [id])
+  invitee   User         @relation("ReceivedInvites", fields: [inviteeId], references: [id])
+  
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  @@unique([groupId, inviteeId]) // A user can only be invited to a group once
 }

@@ -47,11 +47,11 @@ export default function NotificationsScreen() {
 
   const handleNotificationPress = (item: any) => {
     if (item.type === 'PAYOUT_SCHEDULED') {
-      router.push({ pathname: '/notification/payout', params: { data: JSON.stringify(item) } });
+      router.push({ pathname: '/sub/notification/payout', params: { data: JSON.stringify(item) } });
        } else if (item.type === 'CONTRIBUTION_CONFIRMED') {
-      router.push({ pathname: '/notification/contribution', params: { data: JSON.stringify(item) } });
+      router.push({ pathname: '/sub/notification/contribution', params: { data: JSON.stringify(item) } });
      } else if (item.type === 'NEW_MEMBER') {
-      router.push({ pathname: '/notification/new-member', params: { data: JSON.stringify(item) } });
+      router.push({ pathname: '/sub/notification/new-member', params: { data: JSON.stringify(item) } });
     }
   };
 
