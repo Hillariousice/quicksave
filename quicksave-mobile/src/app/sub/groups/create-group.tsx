@@ -9,6 +9,9 @@ import Slider from '@react-native-community/slider';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Colors } from '@/theme/Colors';
 import { api } from '@/api/client';
+import { useAppDispatch } from '@/store';
+import { fetchMyGroups } from '@/store/slices/groupSlice';
+import { GroupService } from '@/api/services/group.service';
 
 
 export default function CreateGroupScreen() {
@@ -17,9 +20,10 @@ export default function CreateGroupScreen() {
   // 👉 Dynamic Light/Dark Mode!
   const colorScheme = useColorScheme();
   const theme = colorScheme === 'dark' ? Colors.dark : Colors.light;
-
+  const dispatch = useAppDispatch();
   // Form State
   const [name, setName] = useState('');
+  const [description, setDescription] = useState('');
   const [amount, setAmount] = useState('');
   const [frequency, setFrequency] = useState<'DAILY' | 'WEEKLY' | 'MONTHLY'>('WEEKLY');
   const [slots, setSlots] = useState<number>(10);
@@ -32,41 +36,35 @@ export default function CreateGroupScreen() {
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
-  const handleCreateGroup = async () => {
-    if (!name || !amount) {
-      setErrorMsg('Please enter a group name and contribution amount.');
+ const handleCreateGroup = async () => {
+  if (!name || !amount) {
+    setErrorMsg('Please enter a group name and contribution amount.');
+    return;
+  }
+  const numericAmount = Number(amount);
+    if (isNaN(numericAmount) || numericAmount <= 0) {
+      setErrorMsg('Please enter a valid contribution amount.');
       return;
     }
-
-    setErrorMsg('');
-    setLoading(true);
-
-    try {
-      // Hit the Day 15 POST /groups endpoint
-      const response = await api.post('/groups', {
-        name,
-        contributionAmount: Number(amount),
-        frequency,
-        maxCapacity: slots,
-        // Passing mode and startDate so the backend rotation engine is ready
-        mode: rotationMode, 
-        startDate: startDate.toISOString(),
-      }); 
-
-      const newGroupId = response.data.data.id;
-      
-      //  Route back to the My Groups tab after success!
-      router.replace({
-        pathname: '/sub/groups/[id]/invite-member',
-        params: { id: newGroupId }
-});
-
-    } catch (error: any) {
-      setErrorMsg(error.response?.data?.message || 'Failed to create group. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
+  setErrorMsg('');
+  setLoading(true);
+  try {
+    await GroupService.createGroup({
+      name,
+      description: description || `Savings group for ${name}`,
+      contributionAmount: Number(amount),
+      frequency,
+      maxCapacity: slots,
+    });
+    dispatch(fetchMyGroups()); // Refresh the list
+    router.replace('/(tabs)/groups');
+  } catch (error: any) {
+    const message = error.response?.data?.message || error.message || 'Failed to create group';
+    setErrorMsg(message);
+  } finally {
+    setLoading(false);
+  }
+};
 
   const onDateChange = (event: any, selectedDate?: Date) => {
     setShowDatePicker(Platform.OS === 'ios');
@@ -86,11 +84,11 @@ export default function CreateGroupScreen() {
       </View>
 
       {/* PROGRESS BAR (Matching Figma) */}
-      <View style={styles.progressContainer}>
+      {/* <View style={styles.progressContainer}>
         <View style={[styles.progressDash, { backgroundColor: theme.primary }]} />
         <View style={[styles.progressDash, { backgroundColor: theme.inputBorder }]} />
         <View style={[styles.progressDash, { backgroundColor: theme.inputBorder }]} />
-      </View>
+      </View> */}
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
         
@@ -120,6 +118,21 @@ export default function CreateGroupScreen() {
           </View>
         </View>
 
+
+{/* Place this inside your ScrollView before the Amount field */}
+<View style={styles.inputGroup}>
+  <Text style={[styles.label, { color: theme.textSecondary }]}>DESCRIPTION</Text>
+  <View style={[styles.textInputContainer, { backgroundColor: theme.inputBg, height: 80 }]}>
+    <TextInput
+      style={[styles.input, { color: theme.text, textAlignVertical: 'top', paddingTop: 12 }]}
+      placeholder="What is this group for? (min 5 characters)"
+      placeholderTextColor={theme.textSecondary}
+      multiline
+      value={description}
+      onChangeText={setDescription}
+    />
+  </View>
+</View>
         {/* CONTRIBUTION AMOUNT */}
         <View style={styles.inputGroup}>
           <Text style={[styles.label, { color: theme.textSecondary }]}>CONTRIBUTION AMOUNT</Text>

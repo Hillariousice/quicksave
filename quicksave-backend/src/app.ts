@@ -7,6 +7,7 @@ import authRoutes from './routes/auth.router';
 import groupRoutes from './routes/group.router';
 import walletRoutes from './routes/wallet.router';
 import webhookRoutes from './routes/webhook.router';
+import userRoutes from './routes/user.router';
 import { apiLimiter } from './middleware/rateLimiter';
 
 const app = express();
@@ -27,6 +28,7 @@ app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/groups', groupRoutes);
 app.use('/api/v1/wallets', walletRoutes);
 app.use('/api/v1/webhooks', webhookRoutes);
+app.use('/api/v1/users', userRoutes);
 
 // Global Error Handler MUST be last
 app.use(errorHandler);

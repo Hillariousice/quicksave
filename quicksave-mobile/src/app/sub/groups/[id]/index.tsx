@@ -9,22 +9,14 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { FontAwesome5, Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 
 import { Colors } from '@/theme/Colors';
-import { api } from '@/api/client';
+// import { api } from '@/api/client';
+// import { timeAgo } from '@/utils/time';
+import { useAppDispatch, useAppSelector } from '@/store';
+import { fetchGroupActivity, fetchGroupDetails } from '@/store/slices/groupSlice';
+import LoadingState from '@/components/ui/loading-state';
+import { updateStatusThunk } from '@/store/slices/groupSlice';
 import { timeAgo } from '@/utils/time';
 
-// Mock Data matching the Figma exact states
-const MOCK_ROTATION = [
-  { id: '1', rank: 1, name: 'Adeyemi O.', amount: '₦10,000', status: 'paid', isReceiving: true, avatar: 'https://i.pravatar.cc/150?img=11' },
-  { id: '2', rank: 2, name: 'Ngozi A.', amount: '₦10,000', status: 'pending', isReceiving: false, avatar: 'https://i.pravatar.cc/150?img=5' },
-  { id: '3', rank: 3, name: 'Chinedu E.', amount: '₦10,000', status: 'failed', isReceiving: false, avatar: null },
-  { id: '4', rank: 4, name: 'Folake M.', amount: '₦10,000', status: 'pending', isReceiving: false, avatar: null },
-];
-
-const MOCK_ACTIVITY = [
-  { id: '1', text: 'David J. contributed ₦10,000', time: '2 hours ago', type: 'contribution' },
-  { id: '2', text: 'Ngozi A.: "Will send mine by evening!"', time: '5 hours ago', type: 'chat' },
-  { id: '3', text: 'Round 4 collection started.', time: '1 day ago', type: 'alert' },
-];
 
 export default function GroupDetailScreen() {
   const router = useRouter();
@@ -34,37 +26,62 @@ export default function GroupDetailScreen() {
   const colorScheme = useColorScheme();
   const theme = colorScheme === 'dark' ? Colors.dark : Colors.light;
 
+
+   const dispatch = useAppDispatch();
+  
+  // 👉 Pull current group details from Redux
+  const { currentGroup, currentTimeline, currentActivity, isDetailLoading } = useAppSelector(state => state.groups);
+
+  console.log("timeline", currentTimeline)
+  console.log("activity", currentActivity)
+  console.log("group", currentGroup)
   const [loading, setLoading] = useState(false); // Set to true when hitting real API
-  const [groupData, setGroupData] = useState<any>(null);
+  // const [groupData, setGroupData] = useState<any>(null);
   const [menuVisible, setMenuVisible] = useState(false);
   // Fetch the data from your Day 17 & 20 endpoints!
-  useEffect(() => {
-
-    const fetchGroupData = async () => {
-      try {
-        const [groupRes, timelineRes] = await Promise.all([
-          api.get(`/groups/${groupId}`),
-          api.get(`/groups/${groupId}/rotation`)
-        ]);
-        setGroupData({ ...groupRes.data.data, timeline: timelineRes.data.data });
-      } catch (error) {
-        console.error("Failed to fetch group", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchGroupData();
-  
+ useEffect(() => {
+    if (groupId) {
+      dispatch(fetchGroupDetails(groupId as string));
+      dispatch(fetchGroupActivity(groupId as string));
+    }
   }, [groupId]);
 
   const handleChangeStatus = () => {
-    setMenuVisible(false); // Close menu first
-    // In a real app, this might open a bottom sheet to select "PAUSED" or "COMPLETED"
-    Alert.alert('Change Status', 'Would you like to Pause or Complete this group?', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Pause', onPress: () => console.log('Paused Group') },
-      { text: 'Complete', onPress: () => console.log('Completed Group') },
-    ]);
+    setMenuVisible(false);
+
+    Alert.alert(
+      'Change Group Status', 
+      'Update the lifecycle of this savings circle:', 
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'Pause Group', 
+          onPress: () => handleDispatchStatus('PAUSED') 
+        },
+        { 
+          text: 'Set to Active', 
+          onPress: () => handleDispatchStatus('ACTIVE') 
+        },
+        { 
+          text: 'Mark as Completed', 
+          onPress: () => handleDispatchStatus('COMPLETED'),
+          style: 'default'
+        },
+      ]
+    );
+  };
+
+  const handleDispatchStatus = async (newStatus: string) => {
+    try {
+      await dispatch(updateStatusThunk({ 
+        groupId: groupId as string, 
+        status: newStatus 
+      })).unwrap();
+      
+      Alert.alert('Success', `Group status updated to ${newStatus}`);
+    } catch (err: any) {
+      Alert.alert('Error', err || 'Failed to update status');
+    }
   };
 
    const handleDeleteGroup = () => {
@@ -95,14 +112,10 @@ export default function GroupDetailScreen() {
       default: return null;
     }
   };
-
-  if (loading) {
-    return (
-      <View style={[styles.loadingContainer, { backgroundColor: theme.background }]}>
-        <ActivityIndicator size="large" color={theme.primary} />
-      </View>
-    );
-  }
+  
+  if (isDetailLoading || !currentGroup) return <LoadingState />;
+  const totalPayout = currentGroup.contributionAmount * (currentGroup.members?.length || 0);
+  const displayList = currentTimeline?.length > 0 ? currentTimeline : currentGroup.members;
 
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }]}>
@@ -113,13 +126,29 @@ export default function GroupDetailScreen() {
           <FontAwesome5 name="arrow-left" size={18} color={theme.textSecondary} />
         </TouchableOpacity>
         
-        <View style={styles.headerTitleContainer}>
-          <Text style={[styles.headerTitle, { color: theme.primary }]}>Lagos Entrepreneurs Circle</Text>
-          <View style={styles.activeBadge}>
-            <View style={styles.activeDot} />
-            <Text style={styles.activeText}>Active</Text>
-          </View>
-        </View>
+
+
+  <View style={styles.headerTitleContainer}>
+    <Text style={[styles.headerTitle, { color: theme.primary }]}>{currentGroup?.name}</Text>
+    <View style={[
+        styles.activeBadge, 
+        currentGroup?.status === 'PAUSED' && { backgroundColor: '#FFCC0020' },
+        currentGroup?.status === 'COMPLETED' && { backgroundColor: '#007AFF20' }
+    ]}>
+      <View style={[
+          styles.activeDot, 
+          currentGroup?.status === 'PAUSED' && { backgroundColor: '#FFCC00' },
+          currentGroup?.status === 'COMPLETED' && { backgroundColor: '#007AFF' }
+      ]} />
+      <Text style={[
+          styles.activeText,
+          currentGroup?.status === 'PAUSED' && { color: '#FFCC00' },
+          currentGroup?.status === 'COMPLETED' && { color: '#007AFF' }
+      ]}>
+        {currentGroup?.status}
+      </Text>
+    </View>
+  </View>
 
         <TouchableOpacity style={styles.headerIcon} onPress={() => setMenuVisible(true)}>
           <Feather name="more-vertical" size={20} color={theme.textSecondary} />
@@ -159,107 +188,114 @@ export default function GroupDetailScreen() {
             </View>
             <View>
               <Text style={styles.payoutLabel}>NEXT PAYOUT</Text>
-              <Text style={[styles.payoutAmount, { color: theme.text }]}>₦120,000</Text>
+              <Text style={[styles.payoutAmount, { color: theme.text }]}> ₦{totalPayout.toLocaleString()}</Text>
             </View>
           </View>
-          <View style={styles.payoutRight}>
+          {/* <View style={styles.payoutRight}>
             <Text style={styles.inText}>In</Text>
             <Text style={[styles.daysText, { color: theme.primary }]}>12 days</Text>
+          </View> */}
+          <View style={styles.payoutRight}>
+            <Text style={styles.inText}>Status</Text>
+            <Text style={[styles.daysText, { color: theme.primary }]}>
+              {currentGroup.nextPayoutDate ? "Active" : "Pending"}
+            </Text>
           </View>
         </View>
 
-        {/* ROTATION ORDER */}
-        <View style={styles.sectionHeader}>
-          <Text style={[styles.sectionTitle, { color: theme.text }]}>Rotation Order</Text>
+ 
+        <TouchableOpacity 
+          style={styles.sectionHeader}
+          onPress={() => router.push(`/sub/groups/${groupId}/rotate-member`)} 
+        >
+          <Text style={[styles.sectionTitle, { color: theme.text }]}>Rotation Timeline</Text>
           <View style={[styles.pillBadge, { backgroundColor: colorScheme === 'dark' ? '#333' : '#E5E7EB' }]}>
-            <Text style={[styles.pillText, { color: theme.textSecondary }]}>12 Members</Text>
+            <Text style={[styles.pillText, { color: theme.textSecondary }]}>View Full</Text>
           </View>
-        </View>
+        </TouchableOpacity>
 
-        <View style={styles.rotationList}>
-          {MOCK_ROTATION.map((item, index) => (
-            <View 
-              key={item.id} 
-              style={[
-                styles.rotationItem, 
-                { backgroundColor: theme.inputBg },
-                item.isReceiving && { borderLeftWidth: 3, borderLeftColor: theme.primary } // Active receiver highlight
-              ]}
-            >
-              <Text style={[styles.rank, { color: theme.textSecondary }]}>{item.rank}</Text>
+
+
+
+<View style={styles.rotationList}>
+          {displayList?.map((item: any, index: number) => (
+            <View key={item.id} style={[styles.rotationItem, { backgroundColor: theme.inputBg }]}>
+              {/* Rank / Position */}
+              <Text style={[styles.rank, { color: theme.textSecondary }]}>
+                {item.position || index + 1}
+              </Text>
               
-              {item.avatar ? (
-                <Image source={{ uri: item.avatar }} style={styles.avatar} />
+              {/* Avatar */}
+              {item.user?.avatar ? (
+                <Image source={{ uri: item.user.avatar }} style={styles.avatar} />
               ) : (
                 <View style={[styles.avatarPlaceholder, { backgroundColor: theme.background }]}>
                   <Feather name="user" size={14} color={theme.textSecondary} />
                 </View>
               )}
 
+              {/* Name & Receiving Info */}
               <View style={styles.rotationInfo}>
-                <Text style={[styles.rotationName, { color: theme.text }]}>{item.name}</Text>
-                {item.isReceiving && (
-                  <Text style={[styles.receivingText, { color: theme.primary }]}> (Receiving)</Text>
+                <Text style={[styles.rotationName, { color: theme.text }]}>
+                  {item.user?.firstName} {item.user?.lastName?.charAt(0)}.
+                </Text>
+                {item.status === 'PROCESSING' && (
+                   <Text style={[styles.receivingText, { color: theme.primary }]}> (Receiving)</Text>
                 )}
               </View>
 
-              <Text style={[styles.rotationAmount, { color: theme.textSecondary }]}>{item.amount}</Text>
+              {/* Amount per person */}
+              <Text style={[styles.rotationAmount, { color: theme.textSecondary }]}>
+                ₦{currentGroup.contributionAmount.toLocaleString()}
+              </Text>
+
+              {/* Real Status Icon from DB */}
               <View style={styles.statusIconContainer}>
-                {renderStatusIcon(item.status)}
+                {item.status === 'ACTIVE' || item.status === 'PAID' ? (
+                   <MaterialCommunityIcons name="check-circle" size={16} color="#34C759" />
+                ) : (
+                   <View style={styles.pendingDot} />
+                )}
               </View>
             </View>
           ))}
         </View>
-
+        
         {/* LIVE ACTIVITY TIMELINE */}
         <View style={styles.sectionHeader}>
           <Text style={[styles.sectionTitle, { color: theme.text }]}>Live Activity</Text>
         </View>
 
-        <View style={[styles.activityContainer, { backgroundColor: theme.inputBg }]}>
-          {MOCK_ACTIVITY.map((activity, index) => {
-            const isLast = index === MOCK_ACTIVITY.length - 1;
-            
-            // Determine icon based on activity type
-            let iconName = "bell";
-            let iconColor = theme.primary;
-            let iconBg = `${theme.primary}15`;
-
-            if (activity.type === 'contribution') {
-              iconName = 'money-bill-wave';
-              iconColor = '#34C759';
-              iconBg = '#34C75915';
-            } else if (activity.type === 'chat') {
-              iconName = 'message-square';
-              iconColor = theme.textSecondary;
-              iconBg = theme.background;
-            }
-
-            return (
-              <View key={activity.id} style={styles.timelineRow}>
-                {/* Timeline Line & Icon */}
-                <View style={styles.timelineGraphic}>
-                  <View style={[styles.timelineIcon, { backgroundColor: iconBg }]}>
-                    <FontAwesome5 name={iconName} size={12} color={iconColor} />
-                  </View>
-                  {!isLast && <View style={[styles.timelineLine, { backgroundColor: theme.inputBorder }]} />}
+       <View style={[styles.activityContainer, { backgroundColor: theme.inputBg }]}>
+          {currentActivity?.map((activity: any, index: number) => (
+            <View key={activity.id} style={styles.timelineRow}>
+              <View style={styles.timelineGraphic}>
+                <View style={[styles.timelineIcon, { backgroundColor: theme.background }]}>
+                  <FontAwesome5 
+                    name={activity.action === 'JOINED' ? 'user-plus' : 'bell'} 
+                    size={10} 
+                    color={theme.primary} 
+                  />
                 </View>
-
-                {/* Timeline Content */}
-                <View style={styles.timelineContent}>
-                  <Text style={[styles.timelineText, { color: theme.text }]}>{activity.text}</Text>
-                  <Text style={[styles.timelineTime, { color: theme.textSecondary }]}>{activity.time}</Text>
-                </View>
+                {index !== currentActivity.length - 1 && <View style={styles.timelineLine} />}
               </View>
-            );
-          })}
+              <View style={styles.timelineContent}>
+                <Text style={[styles.timelineText, { color: theme.text }]}>
+                  {activity.user?.firstName} {activity.message}
+                </Text>
+                <Text style={[styles.timelineTime, { color: theme.textSecondary }]}>
+                  {timeAgo(activity.createdAt)}
+                </Text>
+              </View>
+            </View>
+          ))}
         </View>
       </ScrollView>
 
       {/* FOOTER ACTION */}
       <View style={[styles.footer, { backgroundColor: theme.background }]}>
-        <TouchableOpacity style={[styles.contributeButton, { backgroundColor: theme.primary }]}>
-          <Text style={styles.contributeText}>Contribute ₦10,000</Text>
+        <TouchableOpacity style={[styles.contributeButton, { backgroundColor: theme.primary }]} onPress={() => router.push(`/sub/groups/${groupId}/contribute-member`)}>
+          <Text style={styles.contributeText}>Contribute ₦{currentGroup.contributionAmount.toLocaleString()}</Text>
           <Feather name="arrow-right" size={18} color="#111" style={{ marginLeft: 8 }} />
         </TouchableOpacity>
       </View>

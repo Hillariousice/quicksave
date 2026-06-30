@@ -3,12 +3,37 @@ import { View, Text, StyleSheet, TouchableOpacity, TextInput, useColorScheme, Sa
 import { useRouter } from 'expo-router';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { Colors } from '@/theme/Colors';
+import { useDispatch } from 'react-redux';
+import { verifyOtpAction } from '@/store/slices/authSlice';
 
 export default function VerifyScreen() {
+const { email } = useLocalSearchParams<{ email: string }>();
   const router = useRouter();
- const colorScheme = useColorScheme();
-const theme = colorScheme === 'dark' ? Colors.dark : Colors.light;
-  const [code, setCode] = useState(['', '', '', '', '', '']); // 6 digit OTP
+  const dispatch = useDispatch<any>();
+  const [otp, setOtp] = useState(['', '', '', '', '', '']);
+  const [loading, setLoading] = useState(false);
+
+   const handleVerify = async () => {
+    const otpString = otp.join('');
+    if (otpString.length < 6) return;
+    
+    setLoading(true);
+    try {
+      await dispatch(verifyOtpAction({ email, otp: otpString })).unwrap();
+      router.replace('/(tabs)');
+    } catch (err) {
+      alert(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const updateOtp = (value: string, index: number) => {
+    const newOtp = [...otp];
+    newOtp[index] = value;
+    setOtp(newOtp);
+    // Add logic here to focus next input via refs if you want
+  };
 
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }]}>
@@ -42,6 +67,7 @@ const theme = colorScheme === 'dark' ? Colors.dark : Colors.light;
                 styles.otpBox, 
                 { backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.text }
               ]}
+              onChangeText={(val) => updateOtp(val, index)}
               maxLength={1}
               keyboardType="number-pad"
               value={digit}
@@ -61,8 +87,8 @@ const theme = colorScheme === 'dark' ? Colors.dark : Colors.light;
 
         {/* Footer Area */}
         <View style={styles.footer}>
-          <TouchableOpacity style={[styles.button, { backgroundColor: theme.primary }]}>
-            <Text style={styles.buttonText}>Verify 🛡️</Text>
+          <TouchableOpacity style={[styles.button, { backgroundColor: theme.primary }]} onPress={handleVerify} disabled={loading}>
+            {loading ? <ActivityIndicator color="#fff" /> : <Text>Verify 🛡️</Text>} <Text style={styles.buttonText}>Verify 🛡️</Text>
           </TouchableOpacity>
           
           <Text style={[styles.supportText, { color: theme.textSecondary }]}>

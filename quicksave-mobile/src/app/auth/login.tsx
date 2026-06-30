@@ -10,13 +10,16 @@ import * as SecureStore from 'expo-secure-store';
 import { useDispatch } from 'react-redux';
 
 import { Colors } from '@/theme/Colors';
-import { api } from '@/api/client';
-import { setCredentials } from '@/store/slices/authSlice';
+import { loginUser } from '@/store/slices/authSlice';
 import { promptBiometrics } from '@/utils/biometrics';
+import { useAppDispatch } from '@/store';
 
 export default function LoginScreen() {
   const router = useRouter();
-  const dispatch = useDispatch();
+
+   const dispatch = useAppDispatch(); 
+
+
   const colorScheme = useColorScheme();
   const theme = colorScheme === 'dark' ? Colors.dark : Colors.light;
 
@@ -36,27 +39,17 @@ export default function LoginScreen() {
     setLoading(true);
 
     try {
-      // 1. Hit your Express Backend
-      const response = await api.post('/auth/login', { email, password });
-      console.log('Login Response:', response.data);
-      const { user, tokens } = response.data.data;
-       
+      // 1. Dispatch the Thunk and unwrap it!
+      await dispatch(loginUser({ email, password })).unwrap();
 
-      // Save tokens securely to the hardware vault
-      await SecureStore.setItemAsync('accessToken', tokens.accessToken);
-      await SecureStore.setItemAsync('refreshToken', tokens.refreshToken);
-
-      // 3. Update Redux global state
-      dispatch(setCredentials({ user }));
-      const biometricPreference = await SecureStore.getItemAsync('biometricsEnabled');
-      // 4. Route to the Dashboard (using replace so they can't swipe back to login)
-       if (!biometricPreference) {
-        // If null, they haven't seen the setup screen yet! Send them there.
-        router.replace('/auth/biometrics'); 
-      } else {
-        // If 'true' or 'false', they already made a choice. Go straight to Home.
-        router.replace('/(tabs)'); 
-      }
+      //  2. Check Biometric preference
+     const biometricPreference = await SecureStore.getItemAsync('biometricsEnabled');
+    
+    if (!biometricPreference) {
+      router.replace('/auth/biometrics'); 
+    } else {
+      router.replace('/(tabs)'); 
+    }
 
     } catch (error: any) {
       console.error('Login Error Object:', error);

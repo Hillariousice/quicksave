@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { validate } from '../middleware/validate';
 import { loginSchema, logoutSchema, refreshTokenSchema, registerSchema, resendOtpSchema, verifyOtpSchema } from '../modules/auth/auth.schema';
-import { login, logout, refreshTokens, register, resendOtp, verifyOtp } from '../controllers/auth/auth.controller';
+import { login, logout, refreshTokens, register, resendOtp, verifyOtp, changePassword,enable2FA } from '../controllers/auth/auth.controller';
 import { authLimiter } from '../middleware/rateLimiter';
 import { requireAuth } from '../middleware/auth';
 
@@ -24,5 +24,8 @@ router.get('/me', requireAuth, (req, res) => {
     data: req.user // Returns the user from the database
   });
 });
+
+router.put('/change-password', requireAuth, changePassword);
+router.post('/2fa/enable', requireAuth, enable2FA);
 
 export default router;

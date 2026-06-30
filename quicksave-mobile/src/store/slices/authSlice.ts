@@ -1,6 +1,36 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import * as SecureStore from 'expo-secure-store';
 import { api } from '../../api/client';
+import { AuthService } from '../../api/services/auth.service';
+
+
+// Ensure this is at the top of the file
+export const loginUser = createAsyncThunk(
+  'auth/login',
+  async (credentials: any, { rejectWithValue }) => {
+    try {
+      const data = await AuthService.login(credentials);
+      await SecureStore.setItemAsync('accessToken', data.tokens.accessToken);
+      await SecureStore.setItemAsync('refreshToken', data.tokens.refreshToken);
+      return data.user;
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || 'Login failed');
+    }
+  }
+);
+
+export const verifyOtpAction = createAsyncThunk('auth/verifyOtp', async ({ email, otp }: { email: string, otp: string }, { rejectWithValue }) => {
+  try {
+    const data = await AuthService.verifyOtp(email, otp);
+    if (data.tokens) {
+        await SecureStore.setItemAsync('accessToken', data.tokens.accessToken);
+        await SecureStore.setItemAsync('refreshToken', data.tokens.refreshToken);
+    }
+    return data.user;
+  } catch (error: any) {
+    return rejectWithValue(error.response?.data?.message || 'OTP Verification failed');
+  }
+});
 
 // Async Thunk to restore session on app boot
 export const restoreSession = createAsyncThunk(
@@ -19,34 +49,43 @@ export const restoreSession = createAsyncThunk(
   }
 );
 
-interface AuthState {
-  user: any | null;
-  isAuthenticated: boolean;
-  isLoading: boolean; // Tracks the initial boot state
-}
 
-const initialState: AuthState = {
-  user: null,
-  isAuthenticated: false,
-  isLoading: true, // We assume loading is true when the app first opens
-};
+// interface AuthState {
+//   user: any | null;
+//   isAuthenticated: boolean;
+//   isLoading: boolean; // Tracks the initial boot state
+// }
+
+// const initialState: AuthState = {
+//   user: null,
+//   isAuthenticated: false,
+//   isLoading: true, // We assume loading is true when the app first opens
+// };
 
 const authSlice = createSlice({
   name: 'auth',
-  initialState,
+  initialState: { user: null, isAuthenticated: false, isLoading: true },
   reducers: {
-    setCredentials: (state, action: PayloadAction<{ user: any }>) => {
-      state.user = action.payload.user;
-      state.isAuthenticated = true;
-    },
     logout: (state) => {
       state.user = null;
       state.isAuthenticated = false;
+      SecureStore.deleteItemAsync('accessToken');
+      SecureStore.deleteItemAsync('refreshToken');
     },
   },
   // 👉 NEW: Handle the result of restoreSession
   extraReducers: (builder) => {
     builder
+      .addCase(loginUser.pending, (state) => { state.isLoading = true; })
+      .addCase(loginUser.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.isAuthenticated = true;
+        state.user = action.payload;
+      })
+      .addCase(loginUser.rejected, (state) => {
+        state.isLoading = false;
+        state.isAuthenticated = false;
+      })
       .addCase(restoreSession.pending, (state) => {
         state.isLoading = true;
       })
@@ -59,9 +98,13 @@ const authSlice = createSlice({
         state.user = null;
         state.isAuthenticated = false;
         state.isLoading = false;
+      })
+      .addCase(verifyOtpAction.fulfilled, (state, action) => {
+        state.user = action.payload;
+        state.isAuthenticated = true;
       });
   },
 });
 
-export const { setCredentials, logout } = authSlice.actions;
+export const { logout } = authSlice.actions;
 export default authSlice.reducer;

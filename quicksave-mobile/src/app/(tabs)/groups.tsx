@@ -1,40 +1,50 @@
 import React, { useState, useEffect } from 'react';
 import { 
   View, Text, StyleSheet, SafeAreaView, ScrollView, 
-  TouchableOpacity, Image, ActivityIndicator , useColorScheme
+  TouchableOpacity, Image, ActivityIndicator , useColorScheme, RefreshControl
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { FontAwesome5, Feather } from '@expo/vector-icons';
 import { api } from '@/api/client';
 import { Colors } from '@/theme/Colors';
+import { useAppDispatch, useAppSelector } from '@/store';
+import { fetchMyGroups } from '@/store/slices/groupSlice';
+import LoadingState from '@/components/ui/loading-state';
+import ErrorState from '@/components/ui/error-state';
+import EmptyState from '@/components/ui/empty-state';
+import { useDispatch } from 'react-redux';
+import PendingSyncBadge from '@/components/ui/pendingsync-badge';
 
 export default function GroupsScreen() {
   const router = useRouter();
   const colorScheme = useColorScheme();
   const theme = colorScheme === 'dark' ? Colors.dark : Colors.light;
-
+  const dispatch = useDispatch();
   const [activeTab, setActiveTab] = useState<'Active' | 'Completed'>('Active');
-  const [groups, setGroups] = useState<any[]>([]);
+  const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
 
+ const { activeGroups, completedGroups, isLoading, error } = useAppSelector((state) => state.groups);
+
+  const { pendingContributions } = useAppSelector((state) => state.offlineQueue);
+  const { isConnected, isInternetReachable } = useAppSelector((state) => state.network);
+  const isOffline = isConnected === false || isInternetReachable === false;
+
   // Fetch groups from the backend
+  const loadGroups = () => {
+    dispatch(fetchMyGroups());
+  };
+
   useEffect(() => {
-    const fetchGroups = async () => {
-      try {
-        // Hitting the Day 15/17 endpoints. 
-        // Note: If you don't have a GET /groups endpoint yet, this will fail gracefully and show the UI.
-        const res = await api.get('/groups');
-        if (res.data?.data) {
-          setGroups(res.data.data);
-        }
-      } catch (error) {
-        console.log("Could not fetch groups, showing empty/mock state.", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchGroups();
-  }, []);
+    loadGroups();
+  }, [dispatch]);
+
+  // 4. Pull-to-refresh logic
+   const onRefresh = async () => {
+    setRefreshing(true);
+    await loadGroups();
+    setRefreshing(false);
+  };
 
   // --- UI COMPONENTS ---
 
@@ -68,8 +78,11 @@ export default function GroupsScreen() {
     </View>
   );
 
-  const GroupCard = ({ title, subtitle, progress, nextDate, membersCount }: any) => (
-    <View style={[styles.card, { backgroundColor: theme.inputBg, borderColor: theme.inputBorder }]}>
+  const GroupCard = ({ title, subtitle, progress, nextDate, membersCount, id, key }: any) => {
+     const hasPendingAction = pendingContributions.some((c: any) => c.groupId === id);
+
+  return (
+    <TouchableOpacity key={key} style={[styles.card, { backgroundColor: theme.inputBg, borderColor: theme.inputBorder }]} onPress={() => router.push(`/groups/${id}`)}>
       <View style={styles.cardHeader}>
         <View>
           <Text style={[styles.cardTitle, { color: theme.text }]}>{title}</Text>
@@ -79,6 +92,8 @@ export default function GroupsScreen() {
           <Text style={[styles.statusText, { color: theme.primary }]}>ACTIVE</Text>
         </View>
       </View>
+     
+     {hasPendingAction && <PendingSyncBadge />}
 
       <View style={styles.progressContainer}>
         <View style={styles.progressRow}>
@@ -112,11 +127,23 @@ export default function GroupsScreen() {
       >
         <Text style={[styles.detailsButtonText, { color: theme.text }]}>View Details</Text>
       </TouchableOpacity>
-    </View>
-  );
+    </TouchableOpacity>
+  )};
 
   const CreateGroupPromoCard = () => (
-    <TouchableOpacity style={[styles.promoCard, { backgroundColor: theme.inputBg, borderColor: theme.primary }]} onPress={() => router.push('/sub/groups/create-group')}>
+    <TouchableOpacity  style={[
+      styles.promoCard, 
+      { backgroundColor: theme.inputBg, borderColor: theme.primary },
+      isOffline && { opacity: 0.5, borderColor: theme.textSecondary } // Fade out if offline
+    ]} 
+    onPress={() => {
+      if (isOffline) {
+        alert("You must be online to create a new group.");
+        return;
+      }
+      router.push('/sub/groups/create-group');
+    }}
+    disabled={isOffline} >
       <View style={[styles.promoIconBg, { backgroundColor: theme.primary }]}>
         <Feather name="plus" size={24} color="#FFF" />
       </View>
@@ -125,19 +152,23 @@ export default function GroupsScreen() {
     </TouchableOpacity>
   );
 
-  if (loading) {
-    return (
-      <View style={[styles.loadingContainer, { backgroundColor: theme.background }]}>
-        <ActivityIndicator size="large" color={theme.primary} />
-      </View>
-    );
+  if (error && activeGroups.length === 0 && completedGroups.length === 0) {
+    return <ErrorState message={error} onRetry={loadGroups} />;
   }
+
+
+
+  // If it's loading for the first time (not pulling to refresh) and we have no cached groups.
+  if (isLoading && !refreshing && activeGroups.length === 0 && completedGroups.length === 0) {
+    return <LoadingState message="Fetching your groups..." />;
+  }
+
 
   return (
     <SafeAreaView style={[styles.safeArea,{ backgroundColor: theme.background }]}>
       <Header />
       
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}  refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.primary} />}>
         
         <View style={[styles.pageTitleContainer, { backgroundColor: theme.background }]}>
           <Text style={[styles.pageTitle, { color: theme.text }]}>My Groups</Text>
@@ -146,39 +177,60 @@ export default function GroupsScreen() {
 
         <Tabs />
 
-        {activeTab === 'Active' ? (
-          <View style={styles.listContainer}>
-            {/* If backend returns data, map it here. For now, we use the Figma mock data to perfect the UI */}
-            
-            <GroupCard 
-              title="Lagos Entrepreneurs" 
-              subtitle="Monthly Savings Circle" 
-              progress={65} 
-              nextDate="Oct 24, 2026" 
-              membersCount={8} 
-            />
-
-            <GroupCard 
-              title="Tech Founders XI" 
-              subtitle="Weekly Contribution" 
-              progress={30} 
-              nextDate="Nov 02, 2026" 
-              membersCount={2} 
-            />
-
-            <CreateGroupPromoCard />
-
-            <GroupCard 
-              title="Family Vacation Fund" 
-              subtitle="Annual Target" 
-              progress={88} 
-              nextDate="Dec 15, 2026" 
-              membersCount={5} 
-            />
+          {activeTab === 'Active' ? (
+            <View style={styles.listContainer}>
+            {/* 👉 SCENARIO 3: EMPTY STATE (Active Groups) */}
+            {activeGroups.length === 0 ? (
+              <EmptyState 
+                icon="users"
+                title="No Active Groups"
+                description="You are not part of any active savings circles right now."
+                actionLabel="Start a Group"
+                onAction={() => router.push('/sub/groups/create-group')}
+              />
+            ) : (
+              <>
+                <CreateGroupPromoCard />
+               {activeGroups.map((group: any) => (
+  // <TouchableOpacity 
+  //   key={group.id} 
+  //   onPress={() => router.push(`/sub/groups/${group.id}`)}
+  // >
+  //   <GroupCard 
+  //     title={group.name} 
+  //     subtitle={`${group.frequency} Contribution`} 
+  //     progress={group.progress || 0} 
+  //     // Formatting the ISO date from backend
+  //     nextDate={group.nextPayoutDate ? new Date(group.nextPayoutDate).toLocaleDateString() : 'TBD'} 
+  //     membersCount={group.membersCount || 0} 
+  //   />
+  // </TouchableOpacity>
+    <GroupCard 
+      title={group.name} 
+      subtitle={`${group.frequency} Contribution`} 
+      progress={group.progress || 0} 
+      // Formatting the ISO date from backend
+      nextDate={group.nextPayoutDate ? new Date(group.nextPayoutDate).toLocaleDateString() : 'TBD'} 
+      membersCount={group.membersCount || 0} 
+    />
+))}
+              </>
+            )}
           </View>
         ) : (
-          <View style={styles.emptyContainer}>
-            <Text style={[styles.emptyText, { color: theme.textSecondary }]}>No completed groups yet.</Text>
+          <View style={styles.listContainer}>
+             {/* Map completed groups here if any */}
+             {completedGroups.length === 0 ? (
+                <EmptyState 
+                  icon="check-circle"
+                  title="No Completed Groups"
+                  description="Groups that have successfully completed their cycles will appear here."
+                />
+             ) : (
+                <View style={styles.emptyContainer}>
+                  <Text style={[styles.emptyText, { color: theme.textSecondary }]}>No completed groups yet.</Text>
+                </View>
+             )}
           </View>
         )}
       </ScrollView>

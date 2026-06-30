@@ -4,12 +4,58 @@ import { useColorScheme } from 'react-native';
 import { Provider, useDispatch, useSelector } from 'react-redux';
 import * as SplashScreen from 'expo-splash-screen';
 import * as SecureStore from 'expo-secure-store';
-import { store, RootState } from '../store';
+import { store, RootState, persistor, useAppSelector } from '../store';
 import { Colors } from '../theme/Colors';
 import { restoreSession } from '../store/slices/authSlice';
+import { PersistGate } from 'redux-persist/integration/react'; 
+import { injectStore } from '../api/client';
+import NetInfo from '@react-native-community/netinfo';
+import { setNetworkState } from '../store/slices/networkSlice';
+import OfflineBanner from '../components/ui/offline-banner';
+import { syncOfflineData } from '../store/slices/offlineQueueSlice';
+import { socketService } from '@/api/services/socket.service';
 
 // Prevent the splash screen from auto-hiding
 SplashScreen.preventAutoHideAsync();
+
+injectStore(store);
+
+function NetworkAndUIWrapper({ children }: { children: React.ReactNode }) {
+  const dispatch = useDispatch<any>();
+  const { isAuthenticated } = useAppSelector((state) => state.auth);
+
+
+  useEffect(() => {
+    // Starts listening to network changes the second the app opens
+    const unsubscribe = NetInfo.addEventListener((state) => {
+      dispatch(setNetworkState(state));
+
+      if (state.isConnected && state.isInternetReachable) {
+        dispatch(syncOfflineData());
+      }
+    });
+
+if (isAuthenticated) {
+      // Connect to the real-time engine when logged in
+      socketService.connect(dispatch);
+    } else {
+      // Disconnect when logged out so we don't leak memory
+      socketService.disconnect();
+    }
+    // Cleanup the listener if the app is destroyed
+   return () => {
+      socketService.disconnect();
+    };
+    
+  }, [isAuthenticated, dispatch]);
+
+  return (
+    <>
+      <OfflineBanner /> 
+      {children}
+    </>
+  );
+}
 
 function RootNavigator() {
   const dispatch = useDispatch<any>();
@@ -83,7 +129,11 @@ function RootNavigator() {
 export default function RootLayout() {
   return (
     <Provider store={store}>
-      <RootNavigator />
+      <PersistGate loading={null} persistor={persistor}>
+        <NetworkAndUIWrapper>
+          <RootNavigator />
+        </NetworkAndUIWrapper>
+      </PersistGate>
     </Provider>
   );
 }

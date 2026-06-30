@@ -4,54 +4,41 @@ import {
   TouchableOpacity, Image, useColorScheme, ActivityIndicator 
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useSelector } from 'react-redux';
-import { FontAwesome5, Feather, MaterialCommunityIcons } from '@expo/vector-icons';
-
+import { FontAwesome5, Feather } from '@expo/vector-icons';
 import { Colors } from '@/theme/Colors';
-import { api } from '@/api/client';
 import ActionBtn from '@/components/home/action-btn';
 import ActivityItem from '@/components/home/activity-item';
-import NavItem from '@/components/home/nav-item';
+import { GroupCard } from '@/components/card/group-card';
+import { useAppSelector, useAppDispatch } from '@/store';
+import { fetchWalletData } from '@/store/slices/walletSlice';
+import { fetchMyGroups } from '@/store/slices/groupSlice';
 
 export default function HomeScreen() {
   const router = useRouter();
+  const dispatch = useAppDispatch();
   const colorScheme = useColorScheme();
   const theme = colorScheme === 'dark' ? Colors.dark : Colors.light;
 
   // Global State
-  const user = useSelector((state: any) => state.auth.user);
+  const user = useAppSelector((state) => state.auth.user);
+  const { balance, transactions, isLoading: walletLoading } = useAppSelector((state) => state.wallet);
+  const { activeGroups, isLoading: groupsLoading } = useAppSelector((state) => state.groups);
 
+ const { pendingContributions, isSyncing, syncAttempts } = useAppSelector(state => state.offlineQueue);
   // Local State
   const [showBalance, setShowBalance] = useState(true);
-  const [wallet, setWallet] = useState<any>(null);
-  const [group, setGroup] = useState<any>(null);
-  const [transactions, setTransactions] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+
+const { isConnected: isSocketLive } = useAppSelector((state) => state.socket);
 
   // Fetch Dashboard Data
-  useEffect(() => {
-    const fetchDashboardData = async () => {
-      try {
-        // Hitting the Day 22 Wallet endpoints
-        const [walletRes, txRes, groupRes] = await Promise.all([
-          api.get('/wallets'),
-          api.get('/wallets/transactions'),
-          api.get('/groups')
-        ]);
-        
-        setWallet(walletRes.data.data);
-        setTransactions(txRes.data.data.slice(0, 3)); // Grab only top 3 for recent activity
-        setGroup(groupRes.data.data);
-        
-      } catch (error) {
-        console.error("Failed to fetch dashboard data", error);
-      } finally {
-        setLoading(false);
-      }
-    };
+useEffect(() => {
+    dispatch(fetchWalletData());
+    dispatch(fetchMyGroups());
+  }, [dispatch]);
 
-    fetchDashboardData();
-  }, []);
+   const upcomingGroup = activeGroups.length > 0 
+    ? [...activeGroups].sort((a, b) => new Date(a.nextPayoutDate).getTime() - new Date(b.nextPayoutDate).getTime())[0] 
+    : null;
 
   // Format currency
   const formatCurrency = (amount: number) => {
@@ -59,8 +46,12 @@ export default function HomeScreen() {
       .format(amount)
       .replace('.00', ''); // Clean up trailing zeros
   };
+  const formatDate = (dateString: string) => {
+    if (!dateString) return 'TBD';
+    return new Date(dateString).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  };
 
-  if (loading) {
+  if (walletLoading && groupsLoading && activeGroups.length === 0) {
     return (
       <View style={[styles.loadingContainer, { backgroundColor: theme.background }]}>
         <ActivityIndicator size="large" color={theme.primary} />
@@ -73,18 +64,53 @@ export default function HomeScreen() {
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         
         {/* HEADER */}
+        {/* HEADER */}
         <View style={styles.header}>
           <View>
-            <Text style={[styles.greeting, { color: theme.textSecondary }]}>Good morning,</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+      <Text style={[styles.greeting, { color: theme.textSecondary }]}>Good morning,</Text>
+      
+      {/* 👉 NEW: Mode-Aware Live Indicator */}
+      {isSocketLive && (
+        <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: theme.primary + '20', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 8 }}>
+          <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: theme.primary, marginRight: 4 }} />
+          <Text style={{ fontSize: 9, color: theme.primary, fontWeight: 'bold' }}>LIVE</Text>
+        </View>
+      )}
+    </View>
             <Text style={[styles.userName, { color: theme.text }]}>{user?.firstName || 'Hillary'}</Text>
           </View>
-          <TouchableOpacity style={styles.avatarContainer}>
-            <Image 
-              source={{ uri: user?.avatar || 'https://i.pravatar.cc/150?img=11' }} 
-              style={styles.avatar} 
-            />
-            <View style={styles.notificationDot} />
-          </TouchableOpacity>
+          
+
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
+
+            <TouchableOpacity onPress={() => router.push('/sub/messages')}>
+              <Feather name="message-square" size={22} color={theme.text} />
+              <View style={[styles.notificationDot, { right: -2, top: -2 }]} />
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.avatarContainer} onPress={()=> router.push('/profile')}>
+              <Image source={{ uri: user?.avatar || 'https://i.pravatar.cc/150?img=11' }} style={styles.avatar} />
+            </TouchableOpacity>
+          </View>
+          {pendingContributions.length > 0 && (
+  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+    {isSyncing ? (
+      <ActivityIndicator size="small" color={theme.primary} />
+    ) : (
+      <Feather 
+        name="cloud-off" 
+        size={16} 
+        // ⭐️ Dynamic Theme + Alert Color! 
+        // If we tried and failed 3 times, turn it Danger Red. Otherwise, standard text color.
+        color={syncAttempts > 2 ? '#FF3B30' : theme.textSecondary} 
+      />
+    )}
+    <Text style={{ color: theme.textSecondary, marginLeft: 6 }}>
+      {pendingContributions.length} Pending
+    </Text>
+  </View>
+)}
         </View>
 
         {/* WALLET BALANCE CARD */}
@@ -98,7 +124,7 @@ export default function HomeScreen() {
           
           <View style={styles.balanceRow}>
             <Text style={styles.balanceAmount}>
-              {showBalance ? formatCurrency(wallet?.balance || 245000) : '₦ ••••••'}
+              {showBalance ? formatCurrency(balance) : '₦ ••••••'}
             </Text>
             <Text style={styles.percentage}>+2.4%</Text>
           </View>
@@ -111,12 +137,18 @@ export default function HomeScreen() {
 
         {/* QUICK ACTIONS */}
         <View style={styles.actionsContainer}>
-          <ActionBtn icon="arrow-up" label="Contribute" theme={theme} />
-          <ActionBtn icon="arrow-down" label="Fund" theme={theme} />
-          <ActionBtn icon="external-link" label="Withdraw" theme={theme} />
+          <ActionBtn icon="arrow-up" label="Contribute" theme={theme}  onPress={()=>{
+              if (upcomingGroup?.id) {
+                router.push({pathname:'/sub/groups/[id]/contribute-member', params: {id: upcomingGroup.id}});
+              } else {
+                console.log("No group found to invite to!");
+              }
+            }}/>
+          <ActionBtn icon="arrow-down" label="Fund" theme={theme} onPress={()=> router.push('/sub/wallet/fund')} />
+          <ActionBtn icon="external-link" label="Withdraw" theme={theme} onPress={()=> router.push('/sub/wallet/withdraw')}/>
           <ActionBtn icon="users" label="Invite" theme={theme}   onPress={() => {
-              if (group?.id) {
-                router.push({pathname:'/sub/groups/[id]/invite-member', params: {id: group.id}});
+              if (upcomingGroup?.id) {
+                router.push({pathname:'/sub/groups/[id]/invite-member', params: {id: upcomingGroup.id}});
               } else {
                 console.log("No group found to invite to!");
               }
@@ -130,45 +162,21 @@ export default function HomeScreen() {
         </View>
 
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.groupsScroll}>
-          {/* Mock Group Card 1 */}
-          <TouchableOpacity style={[styles.groupCard, { backgroundColor: theme.inputBg }]} onPress={() => router.push(`/sub/groups/${group?.id}`)}>
-            <View style={styles.groupCardHeader}>
-              <FontAwesome5 name="users" size={16} color={theme.textSecondary} />
-              <Text style={styles.groupBadge}>Ajo</Text>
-            </View>
-            <Text style={[styles.groupName, { color: theme.text }]}>Lagos Entrepreneurs</Text>
-            
-            <View style={styles.progressContainer}>
-              <View style={styles.progressRow}>
-                <Text style={styles.progressText}>Progress</Text>
-                <Text style={styles.progressText}>60%</Text>
-              </View>
-              <View style={styles.progressBarBg}>
-                <View style={[styles.progressBarFill, { width: '60%' }]} />
-              </View>
-            </View>
-            <Text style={styles.nextDate}>🗓 Next: Oct 15</Text>
-          </TouchableOpacity>
 
-          {/* Mock Group Card 2 */}
-          <TouchableOpacity style={[styles.groupCard, { backgroundColor: theme.inputBg }]} onPress={() => router.push(`/sub/groups/${group?.id}`)}>
-            <View style={styles.groupCardHeader}>
-              <FontAwesome5 name="home" size={16} color={theme.textSecondary} />
-              <Text style={styles.groupBadge}>Family</Text>
-            </View>
-            <Text style={[styles.groupName, { color: theme.text }]}>Family Savings</Text>
-            
-            <View style={styles.progressContainer}>
-              <View style={styles.progressRow}>
-                <Text style={styles.progressText}>Progress</Text>
-                <Text style={styles.progressText}>25%</Text>
-              </View>
-              <View style={styles.progressBarBg}>
-                <View style={[styles.progressBarFill, { width: '25%' }]} />
-              </View>
-            </View>
-            <Text style={styles.nextDate}>🗓 Next: Nov 02</Text>
-          </TouchableOpacity>
+           {activeGroups.map((group) => (
+            <GroupCard 
+              key={group.id}
+              title={group.name}
+              type={`${group.frequency}`}
+              progress={group.progress || 0}
+              nextDate={`${formatDate(group.nextPayoutDate)}`}
+              groupId={group.id}
+            />
+          ))}
+          {activeGroups.length === 0 && (
+            <Text style={{ color: theme.textSecondary, marginLeft: 5 }}>No active groups yet.</Text>
+          )}
+         
         </ScrollView>
 
         {/* UPCOMING PAYOUT HIGHLIGHT */}
@@ -188,13 +196,24 @@ export default function HomeScreen() {
         {/* RECENT ACTIVITY */}
         <View style={[styles.sectionHeader, { marginTop: 24 }]}>
           <Text style={[styles.sectionTitle, { color: theme.text }]}>Recent Activity</Text>
-          <TouchableOpacity><Text style={styles.viewAll}>See All</Text></TouchableOpacity>
+          <TouchableOpacity  onPress={() => router.push('/sub/wallet/transaction-history')}><Text style={styles.viewAll}>See All</Text></TouchableOpacity>
         </View>
 
         <View style={styles.activityContainer}>
-          <ActivityItem icon="arrow-up" title="Contribution to Quicksave Group" date="Today, 10:24 AM" amount="-₦20,000" type="debit" theme={theme} />
-          <ActivityItem icon="arrow-down" title="Wallet Funded" date="Yesterday, 14:30 PM" amount="+₦50,000" type="credit" theme={theme} />
-          <ActivityItem icon="user-check" title="Invite Accepted" date="Oct 01, 09:15 AM" amount="" type="neutral" theme={theme} />
+      {transactions.slice(0, 3).map((tx: any) => (
+            <ActivityItem 
+              key={tx.id}
+              icon={tx.type === 'CREDIT' || tx.type === 'FUNDING' ? "arrow-down" : "arrow-up"} 
+              title={tx.description} 
+              date={new Date(tx.createdAt).toLocaleDateString()} 
+              amount={`${tx.type === 'DEBIT' || tx.type === 'CONTRIBUTION' ? '-' : '+'}${formatCurrency(tx.amount)}`} 
+              type={tx.type === 'DEBIT' || tx.type === 'CONTRIBUTION' ? 'debit' : 'credit'} 
+              theme={theme} 
+            />
+          ))}
+          {transactions.length === 0 && (
+            <Text style={{ color: theme.textSecondary }}>No recent transactions.</Text>
+          )}
         </View>
 
       </ScrollView>

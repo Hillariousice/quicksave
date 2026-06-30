@@ -15,21 +15,21 @@ export const getMyWallet = catchAsync(async (req: Request, res: Response) => {
   return sendSuccess(res, wallet, 'Wallet retrieved successfully', 200);
 });
 
-export const getMyTransactions = catchAsync(async (req: Request, res: Response) => {
-  const userId = req.user.id;
+// export const getMyTransactions = catchAsync(async (req: Request, res: Response) => {
+//   const userId = req.user.id;
   
-  // Find the wallet first
-  const wallet = await walletService.getWalletByUserId(userId);
+//   // Find the wallet first
+//   const wallet = await walletService.getWalletByUserId(userId);
 
-  // Fetch the ledger history for this wallet
-  const transactions = await prisma.transaction.findMany({
-    where: { walletId: wallet.id },
-    orderBy: { createdAt: 'desc' }, // Newest first
-    take: 50, // Limit to recent 50 for performance
-  });
+//   // Fetch the ledger history for this wallet
+//   const transactions = await prisma.transaction.findMany({
+//     where: { walletId: wallet.id },
+//     orderBy: { createdAt: 'desc' }, // Newest first
+//     take: 50, // Limit to recent 50 for performance
+//   });
 
-  return sendSuccess(res, transactions, 'Transaction history retrieved', 200);
-});
+//   return sendSuccess(res, transactions, 'Transaction history retrieved', 200);
+// });
 
 export const fundWallet = catchAsync(async (req: Request, res: Response) => {
   const { amount } = req.body;
@@ -85,4 +85,47 @@ export const withdrawFunds = catchAsync(async (req: Request, res: Response) => {
   });
 
   return sendSuccess(res, transaction, 'Withdrawal is being processed', 200);
+});
+
+
+export const getMyTransactions = catchAsync(async (req: Request, res: Response) => {
+  const userId = req.user.id;
+  const { type, page = 1, limit = 20 } = req.query;
+
+  const wallet = await walletService.getWalletByUserId(userId);
+
+  const where: any = { walletId: wallet.id };
+  if (type && type !== 'All') {
+    where.type = type;
+  }
+
+  const transactions = await prisma.transaction.findMany({
+    where,
+    orderBy: { createdAt: 'desc' },
+    skip: (Number(page) - 1) * Number(limit),
+    take: Number(limit),
+  });
+
+  return sendSuccess(res, transactions, 'Transaction history retrieved', 200);
+});
+
+
+export const getTransactionDetails = catchAsync(async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const userId = req.user.id;
+
+  const transaction = await prisma.transaction.findUnique({
+    where: { id },
+    include: {
+      wallet: {
+        select: { userId: true }
+      }
+    }
+  });
+
+  if (!transaction || transaction.wallet.userId !== userId) {
+    throw new AppError('Transaction not found', 404);
+  }
+
+  return sendSuccess(res, transaction, 'Transaction details retrieved', 200);
 });

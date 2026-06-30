@@ -147,3 +147,31 @@ export const logout = catchAsync(async (req: Request, res: Response) => {
 
   return sendSuccess(res, null, 'Logged out successfully', 200);
 });
+
+// 👉 Add these to the bottom of your auth.controller.ts
+export const changePassword = catchAsync(async (req: Request, res: Response) => {
+  const { currentPassword, newPassword } = req.body;
+  const userId = req.user.id; // From requireAuth
+
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user) throw new AppError('User not found', 404);
+
+  // 1. Verify old password
+  const isMatch = await bcrypt.compare(currentPassword, user.passwordHash);
+  if (!isMatch) throw new AppError('Incorrect current password', 400);
+
+  // 2. Hash and save new password
+  const newPasswordHash = await bcrypt.hash(newPassword, 12);
+  await prisma.user.update({
+    where: { id: userId },
+    data: { passwordHash: newPasswordHash }
+  });
+
+  return sendSuccess(res, null, 'Password updated successfully', 200);
+});
+
+// Mock 2FA Endpoint (A real app would use the 'speakeasy' library here)
+export const enable2FA = catchAsync(async (req: Request, res: Response) => {
+  // In reality: generate a QR code secret, verify the OTP, and save it.
+  return sendSuccess(res, { enabled: true }, '2FA enabled successfully', 200);
+});

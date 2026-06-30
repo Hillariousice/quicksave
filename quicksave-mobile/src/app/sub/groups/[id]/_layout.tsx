@@ -7,7 +7,9 @@ export default function GroupIdLayout() {
         screenOptions={{headerShown: false}}>
             <Stack.Screen name="index" options={{ headerShown: false }} />
             <Stack.Screen name="invite-member" options={{ headerShown: false }} />
+            <Stack.Screen name="contribute-member" options={{ headerShown: false }} />
             <Stack.Screen name="join-group" options={{ headerShown: false }} />
+            <Stack.Screen name="rotate-member" options={{ headerShown: false }} />
         </Stack>
     );
 }

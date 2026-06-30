@@ -9,6 +9,7 @@ import { AppError } from '../../utils/AppError';
 import { groupService } from '../../services/group.services';
 import { getIo } from '../../config/socket';
 import { payoutQueue } from '../../queues/payout.queue';
+import { syncQueue } from '../../queues/sync.queue';
 
 export const createGroup = catchAsync(async (req: Request, res: Response) => {
   const { name, description, contributionAmount, frequency, maxCapacity } = req.body;
@@ -275,9 +276,13 @@ export const getRotationSchedule = catchAsync(async (req: Request, res: Response
   if (!group) throw new AppError('Group not found', 404);
 
   // Call our new service method!
-  const timelineData = await groupService.getRotationTimeline(groupId);
+  const timelineData = await prisma.rotationSlot.findMany({
+    where: { groupId },
+    include: { user: { select: { firstName: true, avatar: true } } },
+    orderBy: { position: 'asc' }
+  })
 
-  return sendSuccess(res, timelineData, 'Rotation timeline retrieved successfully', 200);
+  return sendSuccess(res, timelineData || [],  'Rotation timeline retrieved successfully', 200);
 });
 
 export const getActivityFeed = catchAsync(async (req: Request, res: Response) => {
@@ -505,4 +510,75 @@ export const inviteMembers = catchAsync(async (req: Request, res: Response) => {
   });
 
   return sendSuccess(res, null, `Successfully invited ${newIdsToInvite.length} members!`, 200);
+});
+
+
+export const getMyGroups = catchAsync(async (req: Request, res: Response) => {
+  const userId = req.user.id;
+
+  // 1. Fetch all groups where this user is a member
+  const groups = await prisma.group.findMany({
+    where: {
+      members: {
+        some: { userId: userId }, // "Find groups where SOME member has my userId"
+      },
+    },
+    include: {
+      // We only need basic member info to show the overlapping avatars on the mobile app
+      members: {
+        take: 3, // Just take 3 members for the UI avatars
+        include: {
+          user: { select: { id: true, avatar: true, firstName: true } },
+        },
+      },
+      _count: {
+        select: { members: true }, // Get the total member count efficiently
+      },
+    },
+    orderBy: { createdAt: 'desc' }, // Newest groups first
+  });
+
+  // 2. Enrich the data for the frontend (Calculate the progress percentage!)
+  const enrichedGroups = groups.map((group: any) => {
+    // Progress = (current members / max capacity) * 100
+    const progressRaw = (group._count.members / group.maxCapacity) * 100;
+    const progress = Math.min(Math.round(progressRaw), 100); // Cap at 100%
+
+    return {
+      id: group.id,
+      name: group.name,
+      description: group.description,
+      contributionAmount: group.contributionAmount,
+      frequency: group.frequency,
+      status: group.status,
+      maxCapacity: group.maxCapacity,
+      membersCount: group._count.members,
+      progress: progress,
+      nextPayoutDate: group.nextPayoutDate || group.startDate,
+      // Pass the 3 avatars for the UI
+      avatars: group.members.map(m => m.user.avatar || 'https://i.pravatar.cc/150?img=11') 
+    };
+  });
+
+  return sendSuccess(res, enrichedGroups, 'Groups retrieved successfully', 200);
+});
+
+export const syncOfflineContributions = catchAsync(async (req: Request, res: Response) => {
+  const { contributions } = req.body; // Array of items from Mobile SQLite
+  const userId = req.user.id;
+
+  if (!Array.isArray(contributions) || contributions.length === 0) {
+    return sendSuccess(res, null, 'No contributions to sync', 200);
+  }
+
+  // Toss them all into the Bull Queue for safe, background processing
+  const jobs = contributions.map((c) => ({
+    name: 'process-sync',
+    data: { userId, groupId: c.groupId, amount: c.amount, offlineId: c.id } // c.id is the SQLite UUID
+  }));
+
+  // Add in bulk
+  await syncQueue.addBulk(jobs);
+
+  return sendSuccess(res, null, 'Offline contributions queued for syncing', 202);
 });

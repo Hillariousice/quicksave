@@ -1,51 +1,77 @@
 import React, { useState, useEffect } from 'react';
 import { 
   View, Text, StyleSheet, SafeAreaView, TouchableOpacity, 
-  TextInput, ScrollView, FlatList, Image, useColorScheme, ActivityIndicator 
+  TextInput, ScrollView, FlatList, Image, useColorScheme, ActivityIndicator, 
+  Alert
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { FontAwesome5, Feather, MaterialIcons } from '@expo/vector-icons';
 import QRCode from 'react-native-qrcode-svg';
 import { Colors } from '@/theme/Colors';
 import { api } from '@/api/client';
+import { GroupService } from '@/api/services/group.service';
+import { useAppDispatch, useAppSelector } from '@/store';
+import { fetchGroupDetails } from '@/store/slices/groupSlice';
 
-// Mock Data for UI perfection before backend integration
-const MOCK_CONTACTS = [
-  { id: '1', name: 'Sarah J.', email: 'sarah@example.com', avatar: 'https://i.pravatar.cc/150?img=5', status: 'none' },
-  { id: '2', name: 'Darcus K.', email: 'darcus@example.com', avatar: 'https://i.pravatar.cc/150?img=11', status: 'none' },
-  { id: '3', name: 'Elena R.', email: 'elena@example.com', avatar: 'https://i.pravatar.cc/150?img=9', status: 'none' },
-  { id: '4', name: 'Sophie Chen', email: '+1 (555) 123-4567', avatar: 'https://i.pravatar.cc/150?img=20', status: 'none' },
-  { id: '5', name: 'Alex Rivera', email: 'alex.riv@email.com', avatar: 'https://i.pravatar.cc/150?img=33', status: 'invited' },
-  { id: '6', name: 'Jordan Lee', email: 'j.lee@example.com', avatar: 'https://i.pravatar.cc/150?img=60', status: 'full' },
-];
 
 export default function InviteMembersScreen() {
   const router = useRouter();
   const { id: groupId } = useLocalSearchParams(); // Gets the group ID from the URL
-
+  const dispatch = useAppDispatch();
   const colorScheme = useColorScheme();
   const theme = colorScheme === 'dark' ? Colors.dark : Colors.light;
 
-  const [searchQuery, setSearchQuery] = useState('');
-  const [contacts, setContacts] = useState(MOCK_CONTACTS);
-  const [selectedUsers, setSelectedUsers] = useState<any[]>(MOCK_CONTACTS.slice(0, 3)); // Pre-select some for the UI
-  const [loading, setLoading] = useState(false);
+  const { currentGroup, isDetailLoading } = useAppSelector((state) => state.groups);
 
-  // Group Capacity Mock Data
-  const currentMembers = 8;
-  const maxCapacity = 12;
-  const slotsFilled = currentMembers + selectedUsers.length;
-  const progressPercentage = (slotsFilled / maxCapacity) * 100;
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [selectedUsers, setSelectedUsers] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [searching, setSearching] = useState(false);
+  
+   useEffect(() => {
+    if (groupId) {
+      dispatch(fetchGroupDetails(groupId as string));
+    }
+  }, [groupId]);
+
+  // 3. Real-time Search Logic
+  useEffect(() => {
+    const delayDebounceFn = setTimeout(async () => {
+      if (searchQuery.trim().length > 2) {
+        setSearching(true);
+        try {
+          const users = await GroupService.searchUsers(searchQuery);
+          // Filter out users who are already members of this group
+          const filtered = users.filter((u: any) => 
+            !currentGroup?.members?.some((m: any) => m.userId === u.id)
+          );
+          setSearchResults(filtered);
+        } catch (error) {
+          console.error("Search failed", error);
+        } finally {
+          setSearching(false);
+        }
+      } else {
+        setSearchResults([]);
+      }
+    }, 500);
+    return () => clearTimeout(delayDebounceFn);
+  }, [searchQuery, currentGroup]);
+
+  // 4. Capacity Calculations from Backend Data
+  const currentMembersCount = currentGroup?.members?.length || 0;
+  const maxCapacity = currentGroup?.maxCapacity || 0;
+  const totalSlotsAfterInvite = currentMembersCount + selectedUsers.length;
+  const progressPercentage = maxCapacity > 0 ? (totalSlotsAfterInvite / maxCapacity) * 100 : 0;
 
   const toggleUserSelection = (user: any) => {
-    if (user.status === 'invited' || user.status === 'full') return;
-
     const isSelected = selectedUsers.find((u) => u.id === user.id);
     if (isSelected) {
       setSelectedUsers(selectedUsers.filter((u) => u.id !== user.id));
     } else {
-      if (slotsFilled >= maxCapacity) {
-        alert("Group capacity reached!");
+      if (totalSlotsAfterInvite >= maxCapacity) {
+        Alert.alert("Capacity Reached", "You cannot select more members than the group capacity allows.");
         return;
       }
       setSelectedUsers([...selectedUsers, user]);
@@ -55,21 +81,24 @@ export default function InviteMembersScreen() {
   const handleSendInvites = async () => {
     if (selectedUsers.length === 0) return;
     setLoading(true);
-    
     try {
-      // ⭐️ Backend integration goes here! 
-      await api.post(`/groups/${groupId}/invites`, { userIds: selectedUsers.map(u => u.id) });
-      
-      // Simulate network delay
-      setTimeout(() => {
-        setLoading(false);
-        router.back();
-      }, 1500);
-    } catch (error) {
-      console.error(error);
+      await GroupService.inviteMembers(groupId as string, selectedUsers.map(u => u.id));
+      Alert.alert("Success", "Invitations sent successfully!");
+      router.back();
+    } catch (error: any) {
+      Alert.alert("Error", error.response?.data?.message || "Failed to send invites");
+    } finally {
       setLoading(false);
     }
   };
+
+   if (isDetailLoading || !currentGroup) {
+    return (
+      <View style={[styles.safeArea, { backgroundColor: theme.background, justifyContent: 'center' }]}>
+        <ActivityIndicator size="large" color={theme.primary} />
+      </View>
+    );
+  }
 
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }]}>
@@ -105,7 +134,7 @@ export default function InviteMembersScreen() {
               <Text style={[styles.capacityTitle, { color: theme.text }]}>Group Capacity</Text>
             </View>
             <Text style={[styles.capacityText, { color: theme.primary }]}>
-              {slotsFilled}/{maxCapacity} Slots Filled
+              {totalSlotsAfterInvite}/{maxCapacity} Slots Filled
             </Text>
           </View>
           
@@ -117,7 +146,7 @@ export default function InviteMembersScreen() {
           <View style={styles.capacityFooter}>
             <Feather name="info" size={12} color={theme.textSecondary} />
             <Text style={[styles.capacitySubtext, { color: theme.textSecondary }]}>
-              Invite {maxCapacity - slotsFilled} more friends to maximize savings efficiency.
+              Invite {maxCapacity - totalSlotsAfterInvite} more friends to maximize savings efficiency.
             </Text>
           </View>
         </View>
@@ -148,67 +177,44 @@ export default function InviteMembersScreen() {
         )}
 
         {/* SUGGESTED CONTACTS (VERTICAL) */}
-        <View style={styles.suggestedSection}>
-          <Text style={[styles.sectionTitle, { color: theme.textSecondary }]}>SUGGESTED FROM CONTACTS</Text>
+          <View style={styles.suggestedSection}>
+          <Text style={[styles.sectionTitle, { color: theme.textSecondary }]}>
+            {searchResults.length > 0 ? 'SEARCH RESULTS' : 'SEARCH FOR USERS TO INVITE'}
+          </Text>
           
-          {contacts.map((user) => {
+          {searchResults.map((user) => {
             const isSelected = selectedUsers.some((u) => u.id === user.id);
-            
             return (
               <TouchableOpacity 
                 key={user.id} 
-                style={[
-                  styles.contactCard, 
-                  { backgroundColor: theme.inputBg },
-                  isSelected && { borderColor: theme.primary, borderWidth: 1 }
-                ]}
+                style={[styles.contactCard, { backgroundColor: theme.inputBg }, isSelected && { borderColor: theme.primary, borderWidth: 1 }]}
                 onPress={() => toggleUserSelection(user)}
-                activeOpacity={0.7}
               >
-                <Image source={{ uri: user.avatar }} style={styles.contactAvatar} />
-                
+                <Image source={{ uri: user.avatar || 'https://i.pravatar.cc/150?u=' + user.id }} style={styles.contactAvatar} />
                 <View style={styles.contactInfo}>
-                  <Text style={[styles.contactName, { color: theme.text }]}>{user.name}</Text>
+                  <Text style={[styles.contactName, { color: theme.text }]}>{user.firstName} {user.lastName}</Text>
                   <Text style={[styles.contactEmail, { color: theme.textSecondary }]}>{user.email}</Text>
                 </View>
-
-                {/* DYNAMIC ACTION BUTTONS */}
                 <View style={styles.actionContainer}>
                   {isSelected ? (
-                    <View style={[styles.actionCheck, { backgroundColor: theme.primary }]}>
-                      <Feather name="check" size={14} color="#111" />
-                    </View>
-                  ) : user.status === 'invited' ? (
-                    <View style={styles.statusBadge}>
-                      <Feather name="clock" size={12} color={theme.primary} />
-                      <Text style={[styles.statusText, { color: theme.primary }]}>Invited</Text>
-                    </View>
-                  ) : user.status === 'full' ? (
-                    <View style={styles.statusBadge}>
-                      <Feather name="alert-triangle" size={12} color="#FF3B30" />
-                      <Text style={[styles.statusText, { color: '#FF3B30' }]}>Full</Text>
-                    </View>
+                    <View style={[styles.actionCheck, { backgroundColor: theme.primary }]}><Feather name="check" size={14} color="#000" /></View>
                   ) : (
-                    <View style={[styles.addButton, { backgroundColor: colorScheme === 'dark' ? '#333' : '#E5E7EB' }]}>
-                      <Text style={[styles.addText, { color: theme.textSecondary }]}>Add</Text>
-                    </View>
+                    <View style={[styles.addButton, { backgroundColor: colorScheme === 'dark' ? '#333' : '#E5E7EB' }]}><Text style={{ color: theme.textSecondary }}>Add</Text></View>
                   )}
                 </View>
-
               </TouchableOpacity>
             );
           })}
         </View>
 
-          <View style={{ alignItems: 'center', padding: 20, backgroundColor: '#FFF', borderRadius: 16 }}>
+
+          <View style={{ alignItems: 'center', padding: 20, backgroundColor: theme.background, borderRadius: 16 }}>
     <Text style={{ marginBottom: 15, fontWeight: 'bold' ,color: theme.text }}>Scan to Join Group</Text>
     <QRCode
-      value="A7F93B2C" // The exact invite code string from the backend
-      size={200}
+      value={currentGroup?.inviteCode || "PENDING"} // The exact invite code string from the backend
+      size={180}
       color="black"
       backgroundColor="white"
-      logo={{ uri: 'https://your-app-logo-url.png' }} // Optional: Put the QuickSave logo in the center!
-      logoSize={40}
     />
   </View>
       </ScrollView>

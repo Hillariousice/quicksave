@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { 
   View, Text, StyleSheet, SafeAreaView, TouchableOpacity, 
   TextInput, KeyboardAvoidingView, Platform, ActivityIndicator, 
-  useColorScheme, ScrollView 
+  useColorScheme, ScrollView, 
+  Alert
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { FontAwesome5, Feather, MaterialCommunityIcons } from '@expo/vector-icons';
@@ -10,9 +11,13 @@ import { FontAwesome5, Feather, MaterialCommunityIcons } from '@expo/vector-icon
 import { Colors } from '@/theme/Colors';
 import { api } from '@/api/client';
 
+import { useAppDispatch } from '@/store';
+import { fetchMyGroups } from '@/store/slices/groupSlice';
+import { GroupService } from '@/api/services/group.service';
+
 export default function JoinGroupScreen() {
   const router = useRouter();
-  
+   const dispatch = useAppDispatch();
   // 👉 Dynamic Light/Dark Mode!
   const colorScheme = useColorScheme();
   const theme = colorScheme === 'dark' ? Colors.dark : Colors.light;
@@ -21,12 +26,11 @@ export default function JoinGroupScreen() {
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
-  const handleJoinGroup = async () => {
-    // Remove "QKS-" if they typed it, and clear any spaces
-    const cleanCode = inviteCode.replace('QKS-', '').replace(/\s/g, '').trim();
-
-    if (cleanCode.length < 6) {
-      setErrorMsg('Please enter a valid invite code.');
+ const handleJoinGroup = async () => {
+    // Basic validation: Codes are 8 chars based on your Zod schema
+    const cleanCode = inviteCode.trim().toUpperCase();
+    if (cleanCode.length !== 8) {
+      setErrorMsg('Invite code must be 8 characters.');
       return;
     }
 
@@ -34,18 +38,23 @@ export default function JoinGroupScreen() {
     setLoading(true);
 
     try {
-      // Hit the Day 16 Backend Endpoint
-      const response = await api.post('/groups/join', { inviteCode: cleanCode });
+      // 1. Call Backend
+      await GroupService.joinGroup(cleanCode);
       
-      // Navigate back to the Groups dashboard to see the new group!
-      router.replace('/(tabs)/groups');
+      // 2. Refresh the Groups List in Redux so the new group shows up
+      await dispatch(fetchMyGroups());
 
+      Alert.alert("Success", "You have joined the group!", [
+        { text: "OK", onPress: () => router.replace('/(tabs)/groups') }
+      ]);
     } catch (error: any) {
-      setErrorMsg(error.response?.data?.message || 'Invalid code or group is full.');
+      const message = error.response?.data?.message || 'Invalid code or group is full.';
+      setErrorMsg(message);
     } finally {
       setLoading(false);
     }
   };
+
 
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }]}>
@@ -85,11 +94,11 @@ export default function JoinGroupScreen() {
           <View style={[styles.inputContainer, { backgroundColor: theme.inputBg }]}>
             <TextInput
               style={[styles.input, { color: theme.text }]}
-              placeholder="QKS-0000"
+              placeholder="A1B2C3D4"
               placeholderTextColor={theme.textSecondary}
               autoCapitalize="characters"
               autoCorrect={false}
-              maxLength={10}
+              maxLength={8}
               value={inviteCode}
               onChangeText={setInviteCode}
             />
