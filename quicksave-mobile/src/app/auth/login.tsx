@@ -10,13 +10,17 @@ import * as SecureStore from 'expo-secure-store';
 import { useDispatch } from 'react-redux';
 
 import { Colors } from '@/theme/Colors';
-import { api } from '@/api/client';
-import { setCredentials } from '@/store/slices/authSlice';
+import { loginUser, restoreSession } from '@/store/slices/authSlice';
 import { promptBiometrics } from '@/utils/biometrics';
+import { useAppDispatch } from '@/store';
+import { SecureVault } from '@/utils/securestorage';
 
 export default function LoginScreen() {
   const router = useRouter();
-  const dispatch = useDispatch();
+
+   const dispatch = useAppDispatch(); 
+
+
   const colorScheme = useColorScheme();
   const theme = colorScheme === 'dark' ? Colors.dark : Colors.light;
 
@@ -36,47 +40,60 @@ export default function LoginScreen() {
     setLoading(true);
 
     try {
-      // 1. Hit your Express Backend
-      const response = await api.post('/auth/login', { email, password });
-      const { user, tokens } = response.data.data;
+      // 1. Dispatch the Thunk and unwrap it!
+      await dispatch(loginUser({ email, password })).unwrap();
+      console.log('accessToken',  await SecureVault.getAccessToken());
 
-      // Save tokens securely to the hardware vault
-      await SecureStore.setItemAsync('accessToken', tokens.accessToken);
-      await SecureStore.setItemAsync('refreshToken', tokens.refreshToken);
-
-      // 3. Update Redux global state
-      dispatch(setCredentials({ user }));
-      const biometricPreference = await SecureStore.getItemAsync('biometricsEnabled');
-      // 4. Route to the Dashboard (using replace so they can't swipe back to login)
-       if (!biometricPreference) {
-        // If null, they haven't seen the setup screen yet! Send them there.
-        router.replace('/auth/biometrics'); 
-      } else {
-        // If 'true' or 'false', they already made a choice. Go straight to Home.
-        router.replace('/home'); 
-      }
+      //  2. Check Biometric preference
+     const biometricPreference = await SecureVault.getBiometricPreference();
+    
+    if (!biometricPreference) {
+      router.replace('/auth/biometrics'); 
+    } 
+    // else {
+    //   router.replace('/(tabs)'); 
+    // }
 
     } catch (error: any) {
-      const message = error.response?.data?.message || 'Invalid credentials. Please try again.';
-      setErrorMsg(message);
+      console.error('Login Error Object:', error);
+      // const message = error.response?.data?.message || 'Invalid credentials. Please try again.';
+      // setErrorMsg(message);
+
+       if (typeof error === 'string') {
+        setErrorMsg(error);
+      } else if (error.message) {
+        setErrorMsg(error.message);
+      } else {
+        setErrorMsg('An unexpected error occurred. Check your connection.');
+      }
+      
     } finally {
       setLoading(false);
     }
   };
 
-  const handleBiometricLogin = async () => {
-    // If you saved a token previously, you can use FaceID/Fingerprint to unlock the app instantly!
-    const success = await promptBiometrics('Unlock Quicksave');
-    if (success) {
-      const token = await SecureStore.getItemAsync('accessToken');
-      if (token) {
-        // Just bypass login if they already have a valid token stored
-        router.replace('/home');
-      } else {
-        setErrorMsg('Please log in with your password first.');
+ const handleBiometricLogin = async () => {
+  const success = await promptBiometrics('Unlock Quicksave');
+  if (success) {
+    const token = await SecureVault.getAccessToken();
+    if (token) {
+      setLoading(true);
+      try {
+        // Verify the token is still valid!
+        await dispatch(restoreSession()).unwrap();
+        router.replace('/(tabs)');
+      } catch (error) {
+        // Token expired or invalid! Force them to type their password.
+        await SecureVault.clearTokens();
+        setErrorMsg('Your session expired. Please log in with your password.');
+      } finally {
+        setLoading(false);
       }
+    } else {
+      setErrorMsg('Please log in with your password first.');
     }
-  };
+  }
+};
 
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }]}>
@@ -148,7 +165,7 @@ export default function LoginScreen() {
         </View>
 
         {/* Forgot Password */}
-        <TouchableOpacity style={styles.forgotPassword}>
+        <TouchableOpacity style={styles.forgotPassword} onPress={() => router.push('/auth/forgot-password')} >
           <Text style={[styles.forgotText, { color: theme.primary }]}>Forgot password?</Text>
         </TouchableOpacity>
 

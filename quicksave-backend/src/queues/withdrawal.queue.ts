@@ -6,7 +6,9 @@ import prisma from '../config/database';
 import { getIo } from '../config/socket';
 
 // Initialize the queue using your Redis URL
-export const withdrawalQueue = new Queue('wallet-withdrawals', env.REDIS_URL);
+export const withdrawalQueue = new Queue('wallet-withdrawals', env.REDIS_URL, {
+  redis: { maxRetriesPerRequest: null }
+});
 
 // The Background Worker Processor
 withdrawalQueue.process(async (job) => {

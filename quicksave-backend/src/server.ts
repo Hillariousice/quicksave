@@ -20,7 +20,7 @@ const startServer = async () => {
       logger.info(`🚀 Quicksave backend is running in ${env.NODE_ENV} mode on port ${env.PORT}`);
     });
   } catch (error: any) {
-    logger.error('❌ Failed to start the server:', error);
+    logger.error(error,'❌ Failed to start the server:');
     process.exit(1);
   }
 };

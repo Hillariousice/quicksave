@@ -6,6 +6,7 @@ import {
 import { useRouter } from 'expo-router';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { Colors } from '@/theme/Colors';
+import * as SecureStore from 'expo-secure-store';
 
 const { width } = Dimensions.get('window');
 
@@ -52,14 +53,21 @@ export default function OnboardingScreen() {
     setCurrentIndex(index);
   };
 
+  const completeOnboarding = async () => {
+    // Save the flag to SecureStore
+    await SecureStore.setItemAsync('hasSeenOnboarding', 'true');
+    // Send them to Login (or Register)
+    router.replace('/auth/login');
+  };
+
   // Navigates to the next slide, or to Register if it's the last slide
-  const handleNext = () => {
+ const handleNext = () => {
     if (currentIndex < SLIDES.length - 1) {
       const nextIndex = currentIndex + 1;
       flatListRef.current?.scrollToIndex({ index: nextIndex, animated: true });
       setCurrentIndex(nextIndex);
     } else {
-      router.push('/auth/register'); // Go to register when done
+      completeOnboarding(); // Modified this
     }
   };
 
@@ -78,7 +86,7 @@ export default function OnboardingScreen() {
           <FontAwesome5 name="shield-alt" size={20} color={theme.primary} />
           <Text style={[styles.logoText, { color: theme.text }]}>QUICKSAVE</Text>
         </View>
-        <TouchableOpacity onPress={() => router.push('/auth/register')}>
+        <TouchableOpacity onPress={() => completeOnboarding()}>
           <Text style={[styles.skipText, { color: theme.textSecondary }]}>Skip</Text>
         </TouchableOpacity>
       </View>

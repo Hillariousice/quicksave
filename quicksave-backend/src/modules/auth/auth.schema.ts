@@ -42,3 +42,23 @@ export const logoutSchema = z.object({
     refreshToken: z.string({ message: 'Refresh token is required' }),
   }),
 });
+
+export const forgotPasswordSchema = z.object({
+  body: z.object({
+    email: z.string().email('Invalid email address'),
+  }),
+});
+
+export const resetPasswordSchema = z.object({
+  body: z.object({
+    email: z.string().email('Invalid email address'),
+    otp: z.string().length(6, 'OTP must be exactly 6 digits'),
+    newPassword: z.string().min(8, 'Password must be at least 8 characters'),
+  }),
+});
+
+export const sendSmsCodeSchema = z.object({
+  body: z.object({
+    phone: z.string().min(10, 'Phone number must be at least 10 digits'),
+  }),
+});

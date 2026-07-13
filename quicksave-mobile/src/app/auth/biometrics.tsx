@@ -7,7 +7,7 @@ import { useRouter } from 'expo-router';
 import { FontAwesome5, MaterialCommunityIcons, Feather } from '@expo/vector-icons';
 import * as LocalAuthentication from 'expo-local-authentication';
 import * as SecureStore from 'expo-secure-store';
-import { Colors } from '@/theme/Colors'; // Adjust path as needed
+import { Colors } from '@/theme/Colors';
 
 export default function BiometricSetupScreen() {
   const router = useRouter();
@@ -44,7 +44,7 @@ export default function BiometricSetupScreen() {
     if (result.success) {
       // ⭐️ Persist the preference securely!
       await SecureStore.setItemAsync('biometricsEnabled', 'true');
-      router.replace('/home'); // Send them to the dashboard!
+      router.replace('/(tabs)'); // Send them to the dashboard!
     } else {
       Alert.alert('Authentication Failed', 'We could not verify your biometrics. Try again or skip.');
     }
@@ -53,7 +53,7 @@ export default function BiometricSetupScreen() {
   const handleSkip = async () => {
     // Save that they actively chose to skip, so we don't ask again next time
     await SecureStore.setItemAsync('biometricsEnabled', 'false');
-    router.replace('/home');
+    router.replace('/(tabs)');
   };
 
   return (

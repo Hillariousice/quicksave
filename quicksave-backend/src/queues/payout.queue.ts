@@ -1,9 +1,11 @@
 import Queue from 'bull';
 import { env } from '../config/env';
 import { logger } from '../config/logger';
-import { payoutService } from '../services/payout.services';
+import { payoutService } from '../services/payout.service';
 
-export const payoutQueue = new Queue('group-payouts', env.REDIS_URL);
+export const payoutQueue = new Queue('group-payouts', env.REDIS_URL, {
+  redis: { maxRetriesPerRequest: null }
+});
 
 payoutQueue.process(async (job) => {
   const { groupId } = job.data;

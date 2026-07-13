@@ -3,9 +3,11 @@ import { env } from '../config/env';
 import { logger } from '../config/logger';
 import prisma from '../config/database';
 import { sendEmail } from '../utils/email';
-import { payoutService } from '../services/payout.services';
+import { payoutService } from '../services/payout.service';
 
-export const schedulerQueue = new Queue('ajo-cron-scheduler', env.REDIS_URL);
+export const schedulerQueue = new Queue('ajo-cron-scheduler', env.REDIS_URL, {
+  redis: { maxRetriesPerRequest: null }
+});
 
 // --- ⚙️ JOB 1: AUTOMATED PAYOUTS ---
 schedulerQueue.process('process-payouts', async (job) => {

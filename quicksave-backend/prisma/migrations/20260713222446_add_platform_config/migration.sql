@@ -1,0 +1,6 @@
+-- AlterTable
+ALTER TABLE "PlatformConfig" ADD COLUMN     "contributionFee" DOUBLE PRECISION NOT NULL DEFAULT 1.5,
+ADD COLUMN     "enforceStrongPasswords" BOOLEAN NOT NULL DEFAULT true,
+ADD COLUMN     "groupCreationFee" DOUBLE PRECISION NOT NULL DEFAULT 500.0,
+ADD COLUMN     "require2FA" BOOLEAN NOT NULL DEFAULT true,
+ADD COLUMN     "whitelistedIPs" JSONB NOT NULL DEFAULT '[]';
