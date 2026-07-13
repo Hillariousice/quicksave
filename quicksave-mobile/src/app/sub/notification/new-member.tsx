@@ -10,7 +10,7 @@ export default function NewMemberDetailScreen() {
   const router = useRouter();
   const { data } = useLocalSearchParams();
   const notification = data ? JSON.parse(data as string) : {};
-  
+  const metadata = notification.metadata || {};
   const colorScheme = useColorScheme();
   const theme = colorScheme === 'dark' ? Colors.dark : Colors.light;
 
@@ -37,9 +37,9 @@ export default function NewMemberDetailScreen() {
         </View>
 
         {/* TEXT */}
-        <Text style={[styles.userName, { color: theme.text }]}>David O.</Text>
+        <Text style={[styles.userName, { color: theme.text }]}>{metadata.fullName}</Text>
         <Text style={[styles.subText, { color: theme.textSecondary }]}>
-          David J. has joined the <Text style={{ color: theme.text, fontWeight: 'bold' }}>Lagos Entrepreneurs</Text> group. Welcome him to the circle and start saving together!
+          {metadata.fullName} has joined the <Text style={{ color: theme.text, fontWeight: 'bold' }}>{metadata.groupName}</Text> group. Welcome {metadata.fullName} to the circle and start saving together!
         </Text>
 
         {/* GROUP INFO CARD */}
@@ -50,7 +50,7 @@ export default function NewMemberDetailScreen() {
             </View>
             <View>
               <Text style={styles.infoLabel}>GROUP NAME</Text>
-              <Text style={[styles.infoValue, { color: theme.text }]}>Lagos Entrepreneurs</Text>
+              <Text style={[styles.infoValue, { color: theme.text }]}>{metadata.groupName}</Text>
             </View>
           </View>
 
@@ -60,8 +60,8 @@ export default function NewMemberDetailScreen() {
             <View style={styles.statBox}>
               <Text style={styles.infoLabel}>CURRENT MEMBERS</Text>
               <View style={styles.membersRow}>
-                <Text style={[styles.statValue, { color: theme.text }]}>12</Text>
-                <Text style={styles.statMax}>/15</Text>
+                <Text style={[styles.statValue, { color: theme.text }]}>{metadata.groupMemberCount}</Text>
+                <Text style={styles.statMax}>/{metadata.groupTarget}</Text>
                 {/* Fake overlapping avatars */}
                 <View style={styles.overlapAvatars}>
                   <View style={[styles.miniAvatar, { backgroundColor: '#4A90E2', right: -10, zIndex: 1 }]} />
@@ -74,9 +74,9 @@ export default function NewMemberDetailScreen() {
               <Text style={styles.infoLabel}>NEXT PAYOUT</Text>
               <View style={styles.dateRow}>
                 <Feather name="calendar" size={14} color={theme.primary} />
-                <Text style={[styles.statValue, { color: theme.text, marginLeft: 6 }]}>Oct 24</Text>
+                <Text style={[styles.statValue, { color: theme.text, marginLeft: 6 }]}>{metadata.nextPayoutDate}</Text>
               </View>
-              <Text style={styles.daysLeft}>In 5 Days</Text>
+              <Text style={styles.daysLeft}>In {metadata.daysLeft} Days</Text>
             </View>
           </View>
         </View>
@@ -87,7 +87,7 @@ export default function NewMemberDetailScreen() {
           <View style={{ flex: 1 }}>
             <Text style={styles.progressTitle}>Saving Progress</Text>
             <Text style={[styles.progressText, { color: theme.textSecondary }]}>
-              The group is <Text style={{ color: theme.text, fontWeight: 'bold' }}>92%</Text> on track for this month's goal.
+              The group is <Text style={{ color: theme.text, fontWeight: 'bold' }}>{metadata.groupProgress}%</Text> on track for this month's goal.
             </Text>
           </View>
         </View>
@@ -95,7 +95,7 @@ export default function NewMemberDetailScreen() {
 
       {/* FOOTER ACTIONS */}
       <View style={styles.footer}>
-        <TouchableOpacity style={[styles.primaryButton, { backgroundColor: theme.primary }]}>
+        <TouchableOpacity style={[styles.primaryButton, { backgroundColor: theme.primary }]} onPress={()=> router.push(`/sub/messages/group/${notification?.data?.group_id}`)}>
           <MaterialCommunityIcons name="chat-processing-outline" size={20} color="#111" style={{ marginRight: 8 }} />
           <Text style={styles.primaryButtonText}>Say Hello</Text>
         </TouchableOpacity>

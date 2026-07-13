@@ -1,7 +1,6 @@
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
-// import { store } from '@/store';
-// import { logout } from '@/store/slices/authSlice';
+import { SecureVault } from '../utils/securestorage';
 
 export const api = axios.create({
   baseURL: process.env.EXPO_PUBLIC_API_URL,
@@ -16,7 +15,7 @@ export const injectStore = (storeInstance: any) => {
 
 // 1. REQUEST INTERCEPTOR: Attach Token
 api.interceptors.request.use(async (config) => {
-  const token = await SecureStore.getItemAsync('accessToken');
+  const token = await SecureVault.getAccessToken(); 
   if (token && config.headers) {
     config.headers.Authorization = `Bearer ${token}`;
   }
@@ -60,7 +59,7 @@ api.interceptors.response.use(
       isRefreshing = true;
 
       try {
-        const refreshToken = await SecureStore.getItemAsync('refreshToken');
+        const refreshToken = await SecureVault.getRefreshToken();
         if (!refreshToken) throw new Error('No refresh token found');
 
         // Hit backend for new tokens
@@ -68,8 +67,7 @@ api.interceptors.response.use(
         const { accessToken: newAccess, refreshToken: newRefresh } = response.data.data.tokens;
 
         // Save new tokens
-        await SecureStore.setItemAsync('accessToken', newAccess);
-        await SecureStore.setItemAsync('refreshToken', newRefresh);
+        await SecureVault.saveTokens(newAccess, newRefresh); 
 
         // Process all queued requests with the new token
         processQueue(null, newAccess);
@@ -81,8 +79,7 @@ api.interceptors.response.use(
       } catch (refreshError) {
         // If the refresh fails (token expired/blacklisted), wipe everything and force logout
         processQueue(refreshError, null);
-        await SecureStore.deleteItemAsync('accessToken');
-        await SecureStore.deleteItemAsync('refreshToken');
+        await SecureVault.clearTokens();
         if (injectedStore) {
           // Dynamic import to prevent circular dependency
           const { logout } = require('../store/slices/authSlice');

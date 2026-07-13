@@ -11,13 +11,14 @@ export default function PayoutAlertDetailScreen() {
   const router = useRouter();
   const { data } = useLocalSearchParams();
   const notification = data ? JSON.parse(data as string) : {};
-  
+  const metadata = notification.metadata || {};
+
   const colorScheme = useColorScheme();
   const theme = colorScheme === 'dark' ? Colors.dark : Colors.light;
 
   // Format currency
   const amount = new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN' })
-    .format(notification.metadata?.amount || 120000).replace('.00', '');
+    .format(metadata?.amount || 120000).replace('.00', '');
 
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }]}>
@@ -41,7 +42,7 @@ export default function PayoutAlertDetailScreen() {
         </View>
 
         {/* TEXT */}
-        <Text style={[styles.congratsText, { color: theme.text }]}>Congratulations, Hillary!</Text>
+        <Text style={[styles.congratsText, { color: theme.text }]}>Congratulations, {metadata.fullName}!</Text>
         <Text style={[styles.subText, { color: theme.textSecondary }]}>
           You have been selected as this month's recipient.
         </Text>
@@ -58,7 +59,7 @@ export default function PayoutAlertDetailScreen() {
             <View style={{ flex: 1 }}>
               <Text style={styles.infoLabel}>Group</Text>
               <Text style={[styles.infoValue, { color: theme.text }]}>
-                {notification.metadata?.groupName || 'Lagos Entrepreneurs'}
+                {metadata?.groupName || 'Lagos Entrepreneurs'}
               </Text>
             </View>
             <Feather name="chevron-right" size={20} color={theme.textSecondary} />
@@ -69,7 +70,7 @@ export default function PayoutAlertDetailScreen() {
           <View style={styles.detailsRow}>
             <View>
               <Text style={styles.infoLabel}>Date</Text>
-              <Text style={[styles.infoValue, { color: theme.text }]}>Oct 24, 2026</Text>
+              <Text style={[styles.infoValue, { color: theme.text }]}>{metadata.payOutDate}</Text>
             </View>
             <View style={{ alignItems: 'flex-end' }}>
               <Text style={styles.infoLabel}>Status</Text>
@@ -94,7 +95,7 @@ export default function PayoutAlertDetailScreen() {
 </ScrollView>
       {/* FOOTER ACTIONS */}
       <View style={styles.footer}>
-        <TouchableOpacity style={[styles.primaryButton, { backgroundColor: theme.primary }]}>
+        <TouchableOpacity style={[styles.primaryButton, { backgroundColor: theme.primary }]} onPress={()=> router.push('/sub/wallet/withdraw')}>
           <MaterialCommunityIcons name="bank-transfer" size={24} color="#111" style={{ marginRight: 8 }} />
           <Text style={styles.primaryButtonText}>Withdraw to Bank</Text>
         </TouchableOpacity>

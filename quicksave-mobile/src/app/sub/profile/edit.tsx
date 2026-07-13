@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, TextInput, ScrollView, Image, useColorScheme, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, TextInput, ScrollView, Image, useColorScheme, KeyboardAvoidingView, Platform, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { FontAwesome5, Feather } from '@expo/vector-icons';
 import { Colors } from '@/theme/Colors';
 import { useDispatch, useSelector } from 'react-redux';
 import { UserService } from '@/api/services/user.service';
 import { restoreSession } from '@/store/slices/authSlice';
+import * as ImagePicker from 'expo-image-picker'; 
 
 export default function EditProfileScreen() {
   const router = useRouter();
@@ -14,12 +15,37 @@ export default function EditProfileScreen() {
   const theme = colorScheme === 'dark' ? Colors.dark : Colors.light;
   const user = useSelector((state: any) => state.auth.user);
   const [loading, setLoading] = useState(false);
+
+  const [selectedImage, setSelectedImage] = useState(user?.avatar || 'https://i.pravatar.cc/150?img=11');
+  
   const [formData, setFormData] = useState({
     fullName: `${user?.firstName || ''} ${user?.lastName || ''}`,
     email: user?.email || '',
     phone: user?.phone || '',
     bio: 'Digital product designer focused on high-performance fintech solutions. Saving for a brighter future with Quicksave.'
   });
+
+  const pickImage = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    
+    if (status !== 'granted') {
+      Alert.alert('Permission Denied', 'We need camera roll permissions to upload a photo.');
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.5,
+      base64: true, // We use base64 to send the image as a string in JSON
+    });
+
+    if (!result.canceled) {
+      // result.assets[0].base64 contains the raw string
+      setSelectedImage(`data:image/jpeg;base64,${result.assets[0].base64}`);
+    }
+  };
 
   const handleSave = async () => {
     setLoading(true);
@@ -29,7 +55,8 @@ export default function EditProfileScreen() {
         firstName: names[0],
         lastName: names[1] || '',
         phone: formData.phone,
-        email: formData.email
+        email: formData.email,
+        avatar: selectedImage || user?.avatar 
       });
       await dispatch(restoreSession()); // Update Redux with new info
       router.back();
@@ -56,8 +83,8 @@ export default function EditProfileScreen() {
           {/* AVATAR EDIT */}
           <View style={styles.avatarSection}>
             <View style={styles.avatarWrapper}>
-              <Image source={{ uri: user?.avatar || 'https://i.pravatar.cc/150?img=11' }} style={[styles.avatar, { borderColor: theme.primary }]} />
-              <TouchableOpacity style={[styles.cameraBadge, { backgroundColor: theme.primary }]}>
+              <Image source={{ uri: selectedImage || user?.avatar || 'https://i.pravatar.cc/150?img=11' }} style={[styles.avatar, { borderColor: theme.primary }]} />
+              <TouchableOpacity style={[styles.cameraBadge, { backgroundColor: theme.primary }]} onPress={pickImage}>
                 <Feather name="camera" size={14} color="#111" />
               </TouchableOpacity>
             </View>

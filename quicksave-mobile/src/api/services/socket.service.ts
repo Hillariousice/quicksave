@@ -18,7 +18,7 @@ class SocketService {
     const baseUrl = process.env.EXPO_PUBLIC_API_URL?.replace('/api/v1', '') || 'http://192.168.1.15:3000';
 
     this.socket = io(baseUrl, {
-      auth: { token }, // 👉 SENIOR DEV MOVE: Secure your sockets!
+      auth: { token }, // MOVE: Secure your sockets!
       transports: ['websocket'], // Force websockets for performance
     });
 
@@ -41,10 +41,23 @@ class SocketService {
     });
 
     // Listen for Payouts or Wallet Updates
+    // this.socket.on('walletUpdated', () => {
+    //   console.log('💰 Wallet updated! Fetching fresh data...');
+    //   dispatch(fetchWalletData()); // Instantly updates the user's balance!
+    // });
     this.socket.on('walletUpdated', () => {
-      console.log('💰 Wallet updated! Fetching fresh data...');
-      dispatch(fetchWalletData()); // Instantly updates the user's balance!
+      console.log('💰 Wallet updated! Syncing global Redux state...');
+      dispatch(fetchWalletData()); 
     });
+    
+  }
+   // 👉 NEW METHODS FOR THE TOAST UI
+  public onPayoutReceived(callback: (data: any) => void) {
+    if (this.socket) this.socket.on('payoutReceived', callback);
+  }
+
+  public offPayoutReceived(callback: (data: any) => void) {
+    if (this.socket) this.socket.off('payoutReceived', callback);
   }
 
   // Join a specific group room (Call this when a user opens a Group Detail screen)
@@ -61,6 +74,57 @@ class SocketService {
       this.socket = null;
     }
   }
+
+   public joinGroupScreen(groupId: string) {
+    if (this.socket?.connected) {
+      this.socket.emit('joinGroupScreen', groupId);
+    }
+  }
+
+  // 👉 Leave the active screen room (Cleanup)
+  public leaveGroupScreen(groupId: string) {
+    if (this.socket?.connected) {
+      this.socket.emit('leaveGroupScreen', groupId);
+    }
+  }
+
+   // Listen for live activity on the active screen
+    public onScreenActivity(callback: (activity: any) => void) {
+    if (this.socket) {
+      this.socket.on('newScreenActivity', callback);
+    }
+  }
+
+  // 👉 Remove the listener to prevent memory leaks when the screen closes
+  public offScreenActivity(callback: (activity: any) => void) {
+    if (this.socket) {
+      this.socket.off('newScreenActivity', callback);
+    }
+  }
+
+  public onMemberJoined(callback: (data: any) => void) {
+    if (this.socket) {
+      this.socket.on('member:joined', callback);
+    }
+  }
+   public offMemberJoined(callback: (data: any) => void) {
+    if (this.socket) {
+      this.socket.off('member:joined', callback);
+    }
+  }
+
+   public onNewTransaction(callback: (tx: any) => void) {
+    if (this.socket) {
+      this.socket.on('newTransaction', callback);
+    }
+  }
+
+  public offNewTransaction(callback: (tx: any) => void) {
+    if (this.socket) {
+      this.socket.off('newTransaction', callback);
+    }
+  }
 }
+
 
 export const socketService = new SocketService();

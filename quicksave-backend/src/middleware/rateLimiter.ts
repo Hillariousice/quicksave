@@ -8,12 +8,12 @@ export const authLimiter = rateLimit({
   max: 5, // Limit each IP to 5 requests
   standardHeaders: true, 
   legacyHeaders: false, 
-  // 👉 FIX 1: Tell Express to use a unique name for this limiter
+  // 👉 Tell Express to use a unique name for this limiter
   requestPropertyName: 'rateLimitAuth', 
   store: new RedisStore({
     // @ts-expect-error
     sendCommand: (...args: string[]) => redisClient.call(...args),
-    // 👉 FIX 2: Add a prefix so Redis stores these counts separately
+    // 👉 Add a prefix so Redis stores these counts separately
     prefix: 'rl_auth:', 
   }),
   handler: (req, res, next) => {

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect , lazy, Suspense} from 'react';
 import { 
   View, Text, StyleSheet, SafeAreaView, TouchableOpacity, 
   TextInput, ScrollView, FlatList, Image, useColorScheme, ActivityIndicator, 
@@ -6,13 +6,13 @@ import {
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { FontAwesome5, Feather, MaterialIcons } from '@expo/vector-icons';
-import QRCode from 'react-native-qrcode-svg';
 import { Colors } from '@/theme/Colors';
 import { api } from '@/api/client';
 import { GroupService } from '@/api/services/group.service';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { fetchGroupDetails } from '@/store/slices/groupSlice';
 
+const QRCode = lazy(() => import('react-native-qrcode-svg'));
 
 export default function InviteMembersScreen() {
   const router = useRouter();
@@ -109,7 +109,7 @@ export default function InviteMembersScreen() {
           <FontAwesome5 name="arrow-left" size={18} color={theme.primary} />
           <Text style={[styles.headerTitle, { color: theme.text }]}>Invite Members</Text>
         </TouchableOpacity>
-        <Feather name="help-circle" size={20} color={theme.textSecondary} />
+        {/* <Feather name="help-circle" size={20} color={theme.textSecondary} /> */}
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
@@ -210,12 +210,14 @@ export default function InviteMembersScreen() {
 
           <View style={{ alignItems: 'center', padding: 20, backgroundColor: theme.background, borderRadius: 16 }}>
     <Text style={{ marginBottom: 15, fontWeight: 'bold' ,color: theme.text }}>Scan to Join Group</Text>
+          <Suspense fallback={<ActivityIndicator size="small" color="#FF8C00" />}>
     <QRCode
       value={currentGroup?.inviteCode || "PENDING"} // The exact invite code string from the backend
       size={180}
       color="black"
       backgroundColor="white"
     />
+    </Suspense>
   </View>
       </ScrollView>
 

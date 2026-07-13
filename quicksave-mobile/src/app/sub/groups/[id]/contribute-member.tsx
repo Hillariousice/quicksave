@@ -5,106 +5,89 @@ import {
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { FontAwesome5, Feather, MaterialCommunityIcons } from '@expo/vector-icons';
-
+import { fetchGroupDetails } from '@/store/slices/groupSlice';
 import { Colors } from '@/theme/Colors';
 import { api } from '@/api/client';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { submitContribution } from '@/store/slices/contributionSlice';
 import { enqueueContribution } from '@/store/slices/offlineQueueSlice';
+import { fetchWalletData } from '@/store/slices/walletSlice';
+import { promptBiometrics } from '@/utils/biometrics';
+import * as SecureStore from 'expo-secure-store';
 
 export default function MakeContributionScreen() {
   const router = useRouter();
   const { id: groupId } = useLocalSearchParams();
   
-  // 👉 Dynamic Light/Dark Mode
   const colorScheme = useColorScheme();
   const theme = colorScheme === 'dark' ? Colors.dark : Colors.light;
 
   const dispatch = useAppDispatch();
+
   const { balance: walletBalance } = useAppSelector(state => state.wallet);
-  const { currentGroup: groupData } = useAppSelector(state => state.groups);
-  const { isProcessingPayment } = useAppSelector(state => state.contributions);
-
-  const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
-  
-  
-
-  // Fetch real wallet and group data
-  // useEffect(() => {
-  //   const fetchData = async () => {
-  //     try {
-  //       const [walletRes, groupRes] = await Promise.all([
-  //         api.get('/wallets'),
-  //         api.get(`/groups/${groupId}`)
-  //       ]);
-        
-  //       if (walletRes.data?.data) setWalletBalance(walletRes.data.data.balance);
-  //       if (groupRes.data?.data) {
-  //         setGroupData({
-  //           name: groupRes.data.data.name,
-  //           amount: groupRes.data.data.contributionAmount,
-  //           nextCollection: 'This Cycle' // You can calculate exact date using your Rotation engine
-  //         });
-  //       }
-  //     } catch (error) {
-  //       console.log("Using fallback mock data for preview.");
-  //     } finally {
-  //       setLoading(false);
-  //     }
-  //   };
-  //   fetchData();
-  // }, [groupId]);
-
+  const { currentGroup: groupData, isDetailLoading } = useAppSelector(state => state.groups);
   const { isConnected, isInternetReachable } = useAppSelector(state => state.network);
-const isOffline = isConnected === false || isInternetReachable === false;
+  const isOffline = isConnected === false || isInternetReachable === false;
 
-  const formatCurrency = (amount: number) => {
+  const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (groupId) {
+      dispatch(fetchGroupDetails(groupId as string));
+      dispatch(fetchWalletData());
+    }
+  }, [groupId]);
+
+  // Helper to ensure we are always formatting a number
+  const formatCurrency = (amount: any) => {
+    const value = typeof amount === 'number' ? amount : 0;
     return new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN' })
-      .format(amount);
+      .format(value);
   };
 
-  const handleConfirmContribution = async () => {
-    if (walletBalance < groupData.amount) {
-      Alert.alert("Insufficient Funds", "Please fund your QuickSave wallet to complete this contribution.");
+   const handleConfirmContribution = async () => {
+    // FIX: Use contributionAmount
+    const requiredAmount = groupData?.contributionAmount || 0;
+
+    if (walletBalance < requiredAmount) {
+      Alert.alert("Insufficient Funds", "Please fund your QuickSave wallet.");
       return;
     }
 
     Alert.alert(
       "Confirm Payment", 
-      `Are you sure you want to contribute ₦${groupData.amount} to ${groupData.name}?`,
+      `Contribute ${formatCurrency(requiredAmount)} to ${groupData?.name}?`,
       [
         { text: "Cancel", style: "cancel" },
         { 
           text: "Confirm", 
           onPress: async () => {
+            const biometricsEnabled = await SecureStore.getItemAsync('biometricsEnabled');
+          
+            if (biometricsEnabled === 'true') {
+              const authSuccess = await promptBiometrics('Confirm Contribution Transfer');
+              if (!authSuccess) return; 
+            }
+
             setSubmitting(true);
             try {
-             
-                 if (isOffline) {
-              await dispatch(enqueueContribution({ 
-                groupId: groupId as string, 
-                amount: groupData.amount 
-              })).unwrap();
+              if (isOffline) {
+                await dispatch(enqueueContribution({ 
+                  groupId: groupId as string, 
+                  amount: requiredAmount 
+                })).unwrap();
+                Alert.alert("Saved Offline 📡", "Your contribution will sync once you're back online.");
+                router.replace('/(tabs)/groups');
+                return;
+              }
 
-              Alert.alert(
-                "Saved Offline 📡", 
-                "You are currently offline. Your contribution has been securely saved and will automatically process when your connection returns."
-              );
-              router.replace('/(tabs)/savings'); // Send back to wallet
-              return; // Stop execution here!
-            }
               const receipt = await dispatch(submitContribution(groupId as string)).unwrap();
-              
-              const successData = { metadata: { amount: groupData.contributionAmount } };
-              
               router.replace({ 
-                pathname: '/sub/notifications/contribution', 
-                params: { data: JSON.stringify(receipt.data.data) } 
+                pathname: '/sub/wallet/transaction-receipt', 
+                params: { id: receipt.id } 
               });
-
             } catch (error: any) {
-              Alert.alert("Error", error.response?.data?.message || "Payment failed.");
+              Alert.alert("Error", error || "Payment failed.");
             } finally {
               setSubmitting(false);
             }
@@ -114,7 +97,7 @@ const isOffline = isConnected === false || isInternetReachable === false;
     );
   };
 
-  if (loading) {
+  if (isDetailLoading || !groupData) {
     return (
       <View style={[styles.loadingContainer, { backgroundColor: theme.background }]}>
         <ActivityIndicator size="large" color={theme.primary} />
@@ -125,7 +108,6 @@ const isOffline = isConnected === false || isInternetReachable === false;
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }]}>
       
-      {/* HEADER */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
           <FontAwesome5 name="arrow-left" size={18} color={theme.text} />
@@ -138,14 +120,13 @@ const isOffline = isConnected === false || isInternetReachable === false;
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         
-        {/* GROUP INFO CARD */}
         <View style={[styles.card, { backgroundColor: theme.inputBg }]}>
           <View style={styles.cardHeader}>
             <View style={{ flex: 1 }}>
               <Text style={[styles.cardLabel, { color: theme.primary }]}>CONTRIBUTING TO</Text>
               <Text style={[styles.groupName, { color: theme.text }]}>{groupData.name}</Text>
               <Text style={[styles.collectionDate, { color: theme.textSecondary }]}>
-                Next collection: {groupData.nextCollection}
+                Frequency: {groupData.frequency}
               </Text>
             </View>
             <View style={[styles.groupIconBg, { backgroundColor: colorScheme === 'dark' ? '#333' : '#E5E7EB' }]}>
@@ -157,14 +138,16 @@ const isOffline = isConnected === false || isInternetReachable === false;
 
           <View style={styles.amountRow}>
             <Text style={[styles.amountLabel, { color: theme.textSecondary }]}>Required Amount</Text>
-            <Text style={[styles.amountValue, { color: theme.primary }]}>{formatCurrency(groupData.amount)}</Text>
+            {/* FIX: Use contributionAmount */}
+            <Text style={[styles.amountValue, { color: theme.primary }]}>
+                {formatCurrency(groupData.contributionAmount)}
+            </Text>
           </View>
         </View>
 
-        {/* PAYMENT SOURCE */}
         <View style={styles.sectionHeader}>
           <Text style={[styles.sectionLabel, { color: theme.textSecondary }]}>PAYMENT SOURCE</Text>
-          <TouchableOpacity>
+          <TouchableOpacity onPress={()=> router.push('/sub/profile/banks')}>
             <Text style={[styles.changeText, { color: theme.primary }]}>Change</Text>
           </TouchableOpacity>
         </View>
@@ -185,17 +168,18 @@ const isOffline = isConnected === false || isInternetReachable === false;
               Available Balance: {formatCurrency(walletBalance)}
             </Text>
           </View>
-
           <Feather name="chevron-right" size={20} color={theme.textSecondary} />
         </View>
 
-        {/* TRANSACTION SUMMARY */}
         <Text style={[styles.sectionLabel, { color: theme.textSecondary, marginBottom: 12 }]}>TRANSACTION SUMMARY</Text>
         <View style={[styles.summaryCard, { backgroundColor: theme.inputBg }]}>
           
           <View style={styles.summaryRow}>
             <Text style={[styles.summaryLabel, { color: theme.textSecondary }]}>Contribution Amount</Text>
-            <Text style={[styles.summaryValue, { color: theme.textSecondary }]}>{formatCurrency(groupData.amount)}</Text>
+            {/* FIX: Use contributionAmount */}
+            <Text style={[styles.summaryValue, { color: theme.textSecondary }]}>
+                {formatCurrency(groupData.contributionAmount)}
+            </Text>
           </View>
           
           <View style={styles.summaryRow}>
@@ -210,11 +194,13 @@ const isOffline = isConnected === false || isInternetReachable === false;
 
           <View style={styles.summaryRow}>
             <Text style={[styles.totalLabel, { color: theme.text }]}>Total to Pay</Text>
-            <Text style={[styles.totalValue, { color: theme.primary }]}>{formatCurrency(groupData.amount)}</Text>
+            {/* FIX: Use contributionAmount */}
+            <Text style={[styles.totalValue, { color: theme.primary }]}>
+                {formatCurrency(groupData.contributionAmount)}
+            </Text>
           </View>
         </View>
 
-        {/* SECURITY NOTE */}
         <View style={[styles.securityNote, { backgroundColor: colorScheme === 'dark' ? '#1A1A1A' : '#F9FAFB' }]}>
           <FontAwesome5 name="shield-alt" size={14} color={theme.textSecondary} style={styles.securityIcon} />
           <Text style={[styles.securityText, { color: theme.textSecondary }]}>
@@ -224,7 +210,6 @@ const isOffline = isConnected === false || isInternetReachable === false;
 
       </ScrollView>
 
-      {/* FOOTER BUTTON */}
       <View style={[styles.footer, { backgroundColor: theme.background }]}>
         <TouchableOpacity 
           style={[styles.confirmButton, { backgroundColor: theme.primary, opacity: submitting ? 0.7 : 1 }]}
@@ -244,6 +229,7 @@ const isOffline = isConnected === false || isInternetReachable === false;
     </SafeAreaView>
   );
 }
+
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1 },

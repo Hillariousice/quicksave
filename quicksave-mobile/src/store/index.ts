@@ -45,6 +45,7 @@ export const store = configureStore({
       // We must ignore these specific action types so Redux Persist doesn't throw serializable errors
       serializableCheck: {
         ignoredActions: [FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER],
+        ignoredPaths: ['chat.messages', 'offlineQueue.pendingContributions'],
       },
     }),
 });

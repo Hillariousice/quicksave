@@ -50,4 +50,8 @@ export const GroupService = {
     const res = await api.patch<ApiResponse>(`/groups/${groupId}/status`, { status });
     return res.data.data;
   },
+    generateRotation: async (groupId: string, data: { mode: 'RANDOM' | 'JOIN_ORDER'; startDate: string }) => {
+    const res = await api.post(`/groups/${groupId}/rotation/generate`, data);
+    return res.data.data;
+  },
 };

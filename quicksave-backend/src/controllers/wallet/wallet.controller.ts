@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import prisma from '../../config/database';
 import { catchAsync } from '../../utils/catchAsync';
 import { sendSuccess } from '../../utils/response';
-import { walletService } from '../../services/wallet.services';
+import { walletService } from '../../services/wallet.service';
 import { paystack } from '../../utils/paystack';
 import { AppError } from '../../utils/AppError';
 import { withdrawalQueue } from '../../queues/withdrawal.queue';

@@ -15,7 +15,7 @@ export default function TwoFactorVerifyScreen() {
   const handleVerify = async () => {
     try {
       const otpString = code.join('');
-      await api.post('/auth/2fa/enable', { code: otpString }); // Call your backend 2fa/enable
+      await api.post('/auth/2fa/enable', { code: otpString });
       alert('2FA Enabled Successfully!');
       router.replace('/sub/profile/security');
     } catch (e) {

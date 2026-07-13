@@ -2,7 +2,7 @@ import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import * as SecureStore from 'expo-secure-store';
 import { api } from '../../api/client';
 import { AuthService } from '../../api/services/auth.service';
-
+import { SecureVault } from '@/utils/securestorage';
 
 // Ensure this is at the top of the file
 export const loginUser = createAsyncThunk(
@@ -14,7 +14,11 @@ export const loginUser = createAsyncThunk(
       await SecureStore.setItemAsync('refreshToken', data.tokens.refreshToken);
       return data.user;
     } catch (error: any) {
-      return rejectWithValue(error.response?.data?.message || 'Login failed');
+         if (error.message === 'Network Error') {
+      return rejectWithValue('Cannot connect to server. Check your Wi-Fi or IP address.');
+    }
+    return rejectWithValue(error.response?.data?.message || 'Login failed');
+
     }
   }
 );
@@ -37,7 +41,7 @@ export const restoreSession = createAsyncThunk(
   'auth/restoreSession',
   async (_, { rejectWithValue }) => {
     try {
-      const token = await SecureStore.getItemAsync('accessToken');
+      const token = await SecureVault.getAccessToken();
       if (!token) return rejectWithValue('No token found');
 
       // Hit your "me" endpoint to verify the token is valid and get the user data
@@ -64,7 +68,7 @@ export const restoreSession = createAsyncThunk(
 
 const authSlice = createSlice({
   name: 'auth',
-  initialState: { user: null, isAuthenticated: false, isLoading: true },
+  initialState: { user: null, isAuthenticated: false, isLoading: true, isBooting: true,  isAppLocked: false,  },
   reducers: {
     logout: (state) => {
       state.user = null;
@@ -72,6 +76,12 @@ const authSlice = createSlice({
       SecureStore.deleteItemAsync('accessToken');
       SecureStore.deleteItemAsync('refreshToken');
     },
+    lockApp: (state) => {
+      state.isAppLocked = true;
+    },
+    unlockApp: (state) => {
+      state.isAppLocked = false;
+    }
   },
   // 👉 NEW: Handle the result of restoreSession
   extraReducers: (builder) => {
@@ -81,24 +91,23 @@ const authSlice = createSlice({
         state.isLoading = false;
         state.isAuthenticated = true;
         state.user = action.payload;
+        state.isBooting = false; // 👈 Add this: Tell the layout booting is finished
       })
       .addCase(loginUser.rejected, (state) => {
         state.isLoading = false;
         state.isAuthenticated = false;
       })
       .addCase(restoreSession.pending, (state) => {
-        state.isLoading = true;
-      })
+        state.isBooting = true; 
+        })
       .addCase(restoreSession.fulfilled, (state, action) => {
-        state.user = action.payload;
-        state.isAuthenticated = true;
-        state.isLoading = false;
-      })
+          state.user = action.payload;
+          state.isAuthenticated = true;
+          state.isBooting = false; // Initial check done
+        })
       .addCase(restoreSession.rejected, (state) => {
-        state.user = null;
-        state.isAuthenticated = false;
-        state.isLoading = false;
-      })
+          state.isBooting = false; // Initial check done, no user found
+        })
       .addCase(verifyOtpAction.fulfilled, (state, action) => {
         state.user = action.payload;
         state.isAuthenticated = true;
@@ -106,5 +115,5 @@ const authSlice = createSlice({
   },
 });
 
-export const { logout } = authSlice.actions;
+export const { logout, lockApp, unlockApp } = authSlice.actions;
 export default authSlice.reducer;

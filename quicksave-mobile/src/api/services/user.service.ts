@@ -16,5 +16,13 @@ export const UserService = {
   addBank: async (data: any) => {
     const res = await api.post('/users/bank', data);
     return res.data.data;
+  },
+  sendEmail: async (data: any) => {
+    const res = await api.post('/users/send-email', data);
+    return res.data.data;
+  },
+  getAvailableBanks: async () => {
+    const res = await api.get('/users/banks/available');
+    return res.data.data;
   }
 };

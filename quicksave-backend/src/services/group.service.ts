@@ -28,9 +28,8 @@ export const groupService = {
         });
     },
 
-     async logAndBroadcast(groupId: string, action: string, message: string, userId?: string) {
-    // Save to PostgreSQL Audit Trail
-    
+    async logAndBroadcast(groupId: string, action: string, message: string, userId?: string) {
+    // 1. Save to PostgreSQL Audit Trail
     const log = await prisma.activityLog.create({
       data: { groupId, action, message, userId },
       include: {
@@ -38,8 +37,23 @@ export const groupService = {
       },
     });
 
-    // Broadcast to everyone currently looking at this group!
-    getIo().to(groupId).emit('newActivity', log);
+    // 2. Broadcast to multiple rooms!
+    const io = getIo();
+    
+    // Format the payload to match what the frontend expects
+    const payload = {
+      id: log.id,
+      text: log.message,
+      time: 'Just now', // Frontend handles real formatting
+      type: action === 'CONTRIBUTION' ? 'contribution' : 'alert',
+      createdAt: log.createdAt,
+    };
+
+    // Broadcast to everyone subscribed generally (for notification badges)
+    io.to(groupId).emit('newActivity', payload);
+    
+    // Broadcast specifically to users actively staring at the Group Detail screen!
+    io.to(`screen_${groupId}`).emit('newScreenActivity', payload);
 
     return log;
   },

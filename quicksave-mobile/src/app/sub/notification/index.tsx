@@ -8,43 +8,21 @@ import { FontAwesome5, Feather, MaterialCommunityIcons } from '@expo/vector-icon
 
 import { Colors } from '@/theme/Colors';
 import { timeAgo } from '@/utils/time';
+import { useAppDispatch, useAppSelector } from '@/store';
+import { fetchNotifications } from '@/store/slices/notificationSlice';
 
-// Mock data (matches your Figma exactly)
-const MOCK_NOTIFICATIONS = [
-  {
-    id: '1',
-    type: 'PAYOUT_SCHEDULED',
-    title: 'Payout Alert',
-    message: "You've been selected as this month's recipient!",
-    createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), // 2h ago
-    isRead: false,
-    metadata: { amount: 120000, groupName: 'Lagos Entrepreneurs' }
-  },
-  {
-    id: '2',
-    type: 'CONTRIBUTION_CONFIRMED',
-    title: 'Contribution Confirmed',
-    message: 'Your contribution of ₦50,000 has been confirmed.',
-    createdAt: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(), // 5h ago
-    isRead: true,
-  },
-  {
-    id: '3',
-    type: 'NEW_MEMBER',
-    title: 'New Member',
-    message: 'David J. joined the Lagos Entrepreneurs group.',
-    createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(), // 1d ago
-    isRead: true,
-  }
-];
+
 
 export default function NotificationsScreen() {
   const router = useRouter();
   const colorScheme = useColorScheme();
   const theme = colorScheme === 'dark' ? Colors.dark : Colors.light;
-
-  const [notifications, setNotifications] = useState(MOCK_NOTIFICATIONS);
-
+  const dispatch = useAppDispatch();
+  const { items: notifications } = useAppSelector(state => state.notifications);
+  console.log('notify:', notifications)
+ useEffect(() => {
+    dispatch(fetchNotifications());
+  }, []);
   const handleNotificationPress = (item: any) => {
     if (item.type === 'PAYOUT_SCHEDULED') {
       router.push({ pathname: '/sub/notification/payout', params: { data: JSON.stringify(item) } });

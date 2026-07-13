@@ -13,6 +13,8 @@ export default function WithdrawConfirmScreen() {
   const theme = colorScheme === 'dark' ? Colors.dark : Colors.light;
 
   const amount = new Intl.NumberFormat('en-NG').format(txData.amount || 50000);
+  
+  
 
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }]}>
@@ -27,7 +29,7 @@ export default function WithdrawConfirmScreen() {
 
         <Text style={[styles.title, { color: theme.text }]}>Withdrawal Initiated</Text>
         <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
-          Your request to withdraw <Text style={{ color: theme.primary }}>₦{amount}</Text> to Access Bank is being processed. Funds should arrive within 24 hours.
+          Your request to withdraw <Text style={{ color: theme.primary }}>₦{amount}</Text> to {txData.receiverBank} is being processed. Funds should arrive within 24 hours.
         </Text>
 
         {/* SUMMARY CARD */}
@@ -39,27 +41,27 @@ export default function WithdrawConfirmScreen() {
 
           <View style={styles.detailRow}>
             <Text style={styles.detailLabel}>Date</Text>
-            <Text style={[styles.detailValue, { color: theme.text }]}>Oct 24, 2026 • 14:45</Text>
+            <Text style={[styles.detailValue, { color: theme.text }]}>{txData.createdAt}</Text>
           </View>
           <View style={styles.detailRow}>
             <Text style={styles.detailLabel}>Transaction ID</Text>
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <Text style={[styles.detailValue, { color: theme.text, marginRight: 6 }]}>QS-7729103-AC</Text>
+              <Text style={[styles.detailValue, { color: theme.text, marginRight: 6 }]}>{txData.refNo}</Text>
               <Feather name="copy" size={12} color={theme.textSecondary} />
             </View>
           </View>
           <View style={styles.detailRow}>
             <Text style={styles.detailLabel}>Destination</Text>
             <View style={{ alignItems: 'flex-end' }}>
-              <Text style={[styles.detailValue, { color: theme.text }]}>Access Bank PLC</Text>
-              <Text style={styles.detailLabel}>001 **** 882</Text>
+              <Text style={[styles.detailValue, { color: theme.text }]}>{txData.receiverBank}</Text>
+              <Text style={styles.detailLabel}>{txData.receiverAccount}</Text>
             </View>
           </View>
           <View style={styles.detailRow}>
             <Text style={styles.detailLabel}>Status</Text>
             <View style={styles.statusBadge}>
               <View style={styles.statusDot} />
-              <Text style={styles.statusText}>In Progress</Text>
+              <Text style={styles.statusText}>{txData.status}</Text>
             </View>
           </View>
         </View>

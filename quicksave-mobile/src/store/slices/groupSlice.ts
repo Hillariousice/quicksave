@@ -76,7 +76,26 @@ const groupSlice = createSlice({
     isDetailLoading: false,
     error: null as string | null,
   },
-  reducers: {},
+  reducers: {
+    // 👉 NEW: Real-time UI update!
+    memberJoinedRealtime: (state, action) => {
+      const { groupId, member } = action.payload;
+
+      // 1. If they are looking at this specific group, increase the member count!
+      if (state.currentGroup && state.currentGroup.id === groupId) {
+        state.currentGroup.membersCount = (state.currentGroup.membersCount || 0) + 1;
+        // Optionally push the member to the list of avatars
+        if (!state.currentGroup.members) state.currentGroup.members = [];
+        state.currentGroup.members.push({ user: member });
+      }
+
+      // 2. Update the "My Groups" list if it exists there
+      const groupInList = state.activeGroups.find(g => g.id === groupId);
+      if (groupInList) {
+        groupInList.membersCount = (groupInList.membersCount || 0) + 1;
+      }
+    }
+  },
  extraReducers: (builder) => {
     builder
       // Fetch All Groups
@@ -117,4 +136,5 @@ const groupSlice = createSlice({
   }
 });
 
+export const { memberJoinedRealtime } = groupSlice.actions; 
 export default groupSlice.reducer;

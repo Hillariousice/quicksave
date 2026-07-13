@@ -3,13 +3,27 @@ import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, useColorScheme 
 import { useRouter } from 'expo-router';
 import { FontAwesome5, Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { Colors } from '@/theme/Colors';
+import { api } from '@/api/client';
+import { useAppSelector } from '@/store';
 
 export default function TwoFactorSetupScreen() {
   const router = useRouter();
   const colorScheme = useColorScheme();
   const theme = colorScheme === 'dark' ? Colors.dark : Colors.light;
+  const user = useAppSelector((state) => state.auth.user);
 
   const [method, setMethod] = useState<'APP' | 'SMS'>('APP');
+
+  const sendSmsCode = async ({phone}: {phone: string})=> {
+     try{
+      
+      const res = await api.post('/auth/send-sms-code', { phone });
+      console.log(res.data);
+      setMethod('SMS')
+     }catch(e){
+      console.log(e);
+     }
+  }
 
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }]}>
@@ -54,7 +68,7 @@ export default function TwoFactorSetupScreen() {
         {/* SMS OPTION */}
         <TouchableOpacity 
           style={[styles.optionCard, { backgroundColor: theme.inputBg, borderColor: method === 'SMS' ? theme.primary : theme.inputBg }]}
-          onPress={() => setMethod('SMS')}
+          onPress={() => sendSmsCode(user.phone)}
         >
           <MaterialCommunityIcons name="message-processing-outline" size={24} color={theme.textSecondary} style={styles.optionIcon} />
           <View style={styles.optionTextContainer}>

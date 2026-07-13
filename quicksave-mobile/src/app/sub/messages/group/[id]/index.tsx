@@ -10,6 +10,7 @@ import { useAppDispatch, useAppSelector } from '@/store';
 import { fetchMessages, receiveMessage } from '@/store/slices/chatSlice';
 import { ChatService } from '@/api/services/chat.service';
 import { io } from 'socket.io-client';
+import { getDayLabel } from '@/utils/date-helper';
 
 export default function GroupChatScreen() {
   const router = useRouter();
@@ -20,6 +21,29 @@ export default function GroupChatScreen() {
  const user = useAppSelector(state => state.auth.user);
   const messages = useAppSelector(state => state.chat.messages);
   const [text, setText] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isSearching, setIsSearching] = useState(false);
+
+   const { currentGroup } = useAppSelector(state => state.groups);
+  
+     const filteredMessages = messages.filter((m: any) => 
+    m.content?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const renderMessages = () => {
+    let lastDate = '';
+    const items: any[] = [];
+
+    filteredMessages.forEach((msg: any) => {
+      const dateLabel = getDayLabel(msg.createdAt);
+      if (dateLabel !== lastDate) {
+        items.push({ type: 'date_separator', label: dateLabel, id: `sep-${msg.id}` });
+        lastDate = dateLabel;
+      }
+      items.push(msg);
+    });
+    return items;
+  };
 
   useEffect(() => {
     // 1. Fetch History
@@ -40,8 +64,8 @@ export default function GroupChatScreen() {
 
   const handleSend = async () => {
     if (!text.trim()) return;
-    const tempMsg = { content: text, senderId: user?.id, type: 'TEXT', createdAt: new Date() };
-    dispatch(receiveMessage(tempMsg)); // Optimistic update
+    const tempMsg = { content: text, senderId: user?.id, type: 'TEXT', createdAt: new Date().toISOString() };
+    dispatch(receiveMessage(tempMsg));
     setText('');
     await ChatService.sendMessage(groupId as string, text);
   };
@@ -55,58 +79,47 @@ export default function GroupChatScreen() {
           <TouchableOpacity onPress={() => router.back()} style={styles.headerIcon}>
             <FontAwesome5 name="arrow-left" size={18} color={theme.primary} />
           </TouchableOpacity>
-          <View style={styles.headerTitleContainer}>
-            <Text style={[styles.headerTitle, { color: theme.text }]} numberOfLines={1}>Lagos Techies Savings</Text>
-            <Text style={[styles.headerSubtitle, { color: theme.textSecondary }]}>12 Members</Text>
-          </View>
-          <View style={styles.headerRight}>
+         {!isSearching ? (
+            <View style={styles.headerTitleContainer}>
+              <Text style={[styles.headerTitle, { color: theme.text }]}>{currentGroup?.name}</Text>
+            </View>
+          ) : (
+            <TextInput 
+              style={{ flex: 1, color: theme.text, marginLeft: 10 }} 
+              placeholder="Search messages..." 
+              autoFocus
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+            />
+          )}
+
+         <TouchableOpacity onPress={() => { setIsSearching(!isSearching); setSearchQuery(''); }}>
+            <Feather name={isSearching ? "x" : "search"} size={20} color={theme.textSecondary} />
+          </TouchableOpacity>
+          {/* <View style={styles.headerRight}>
             <TouchableOpacity style={styles.headerIcon}><Feather name="search" size={20} color={theme.textSecondary} /></TouchableOpacity>
             <TouchableOpacity style={styles.headerIcon}><Feather name="more-vertical" size={20} color={theme.textSecondary} /></TouchableOpacity>
-          </View>
+          </View> */}
         </View>
 
         <ScrollView contentContainerStyle={styles.chatScroll} showsVerticalScrollIndicator={false}>
           
-          {/* DATE SEPARATOR */}
-          <View style={styles.dateSeparator}>
-            <View style={[styles.dateBadge, { backgroundColor: theme.inputBg }]}>
-              <Text style={[styles.dateText, { color: theme.textSecondary }]}>TODAY</Text>
-            </View>
-          </View>
-
-          {/* CHAT MESSAGES */}
-          {messages?.map((msg: any) => {
-            if (msg.type === 'system') {
+        {renderMessages().map((item: any) => {
+            if (item.type === 'date_separator') {
               return (
-                <View key={msg.id} style={styles.systemMessageContainer}>
-                  <View style={[styles.systemMessage, { backgroundColor: theme.inputBg, borderColor: theme.inputBorder }]}>
-                    <FontAwesome5 name={msg.icon as any} size={14} color={theme.primary} style={{ marginBottom: 6 }} />
-                    <Text style={[styles.systemText, { color: theme.textSecondary }]}>{msg.text}</Text>
-                  </View>
+                <View key={item.id} style={styles.dateSeparator}>
+                  <View style={[styles.dateBadge, { backgroundColor: theme.inputBg }]}><Text style={styles.dateText}>{item.label}</Text></View>
                 </View>
               );
             }
 
-            const isSent = msg.type === 'sent';
+            const isSent = item.senderId === user?.id;
             return (
-              <View key={msg.id} style={[styles.messageRow, isSent ? styles.messageRowSent : styles.messageRowReceived]}>
-                {!isSent && <Image source={{ uri: msg.avatar }} style={styles.avatar} />}
-                
-                <View style={[styles.messageContent, isSent ? styles.messageContentSent : styles.messageContentReceived]}>
-                  <Text style={[styles.senderName, { color: theme.textSecondary }, isSent && { textAlign: 'right' }]}>{msg.sender}</Text>
-                  <View style={[
-                    styles.bubble, 
-                    isSent ? [styles.bubbleSent, { backgroundColor: theme.primary }] : [styles.bubbleReceived, { backgroundColor: theme.inputBg }]
-                  ]}>
-                    <Text style={[styles.messageText, { color: isSent ? '#111' : theme.text }]}>{msg.text}</Text>
-                  </View>
-                  <View style={[styles.timeRow, isSent && { justifyContent: 'flex-end' }]}>
-                    <Text style={[styles.timeText, { color: theme.textSecondary }]}>{msg.time}</Text>
-                    {isSent && <MaterialIcons name="done-all" size={14} color={theme.primary} style={{ marginLeft: 4 }} />}
-                  </View>
+              <View key={item.id} style={[styles.messageRow, isSent ? styles.messageRowSent : styles.messageRowReceived]}>
+                <View style={[styles.bubble, isSent ? [styles.bubbleSent, { backgroundColor: theme.primary }] : [styles.bubbleReceived, { backgroundColor: theme.inputBg }]]}>
+                  {/* FIX: Use item.content, not item.text */}
+                  <Text style={{ color: isSent ? '#000' : theme.text }}>{item.content}</Text>
                 </View>
-
-                {isSent && <Image source={{ uri: msg.avatar }} style={styles.avatar} />}
               </View>
             );
           })}

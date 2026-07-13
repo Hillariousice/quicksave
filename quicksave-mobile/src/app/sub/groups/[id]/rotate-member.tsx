@@ -17,8 +17,9 @@ export default function RotationTimelineScreen() {
   // 👉 Dynamic Light/Dark Mode
   const colorScheme = useColorScheme();
   const theme = colorScheme === 'dark' ? Colors.dark : Colors.light;
-
+  const currentUser = useAppSelector((state) => state.auth.user);
   const [loading, setLoading] = useState(true);
+  const [generating, setGenerating] = useState(false);
   const [timeline, setTimeline] = useState<any[]>([]);
   const [groupInfo, setGroupInfo] = useState<any>(null);
 
@@ -53,6 +54,42 @@ export default function RotationTimelineScreen() {
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   };
 
+  const handleGenerateRotation = () => {
+    if (groupInfo.members.length < 2) {
+      Alert.alert("Cannot Start", "You need at least 2 members to generate a rotation.");
+      return;
+    }
+
+    Alert.alert(
+      "Generate Rotation",
+      "How would you like to order the payouts?",
+      [
+        { text: "Cancel", style: "cancel" },
+        { text: "Random Order", onPress: () => triggerApi('RANDOM') },
+        { text: "By Join Date", onPress: () => triggerApi('JOIN_ORDER') },
+      ]
+    );
+  };
+
+  const triggerApi = async (mode: 'RANDOM' | 'JOIN_ORDER') => {
+    setGenerating(true);
+    try {
+      await GroupService.generateRotation(groupId as string, {
+        mode,
+        startDate: new Date().toISOString() // Start from today
+      });
+      Alert.alert("Success", "Rotation generated successfully!");
+      loadTimeline(); // Refresh the screen data
+    } catch (error: any) {
+      Alert.alert("Error", error.response?.data?.message || "Failed to generate rotation");
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  // 3. Permission Check: Is the logged-in user the one who created the group?
+  const isGroupAdmin = currentUser?.id === groupInfo?.creatorId;
+
   if (loading) {
     return (
       <View style={[styles.loadingContainer, { backgroundColor: theme.background }]}>
@@ -67,12 +104,12 @@ export default function RotationTimelineScreen() {
       {/* HEADER */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.headerIcon}>
-          <Feather name="menu" size={24} color={theme.text} />
+          <Feather name="arrow-left" size={24} color={theme.text} />
         </TouchableOpacity>
         <View style={styles.logoContainer}>
           <Text style={[styles.logoText, { color: theme.primary }]}>QUICKSAVE</Text>
         </View>
-        <TouchableOpacity style={styles.headerIcon}>
+        <TouchableOpacity style={styles.headerIcon} onPress={()=> router.push('/sub/notification')}>
           <Feather name="bell" size={20} color={theme.text} />
         </TouchableOpacity>
       </View>
@@ -88,9 +125,37 @@ export default function RotationTimelineScreen() {
         {/* TIMELINE LIST */}
          <View style={styles.timelineContainer}>
           {timeline.length === 0 ? (
-            <Text style={{ textAlign: 'center', color: theme.textSecondary, marginTop: 20 }}>
-              Rotation hasn't been generated yet.
-            </Text>
+            // <Text style={{ textAlign: 'center', color: theme.textSecondary, marginTop: 20 }}>
+            //   Rotation hasn't been generated yet.
+            // </Text>
+            <View style={styles.emptyState}>
+              <Feather name="layers" size={50} color={theme.textSecondary} style={{ marginBottom: 16 }} />
+              <Text style={{ textAlign: 'center', color: theme.textSecondary, fontSize: 16 }}>
+                Rotation hasn't been generated yet.
+              </Text>
+              
+              {/* 4. Show Generate Button only to ADMIN */}
+              {isGroupAdmin ? (
+                <TouchableOpacity 
+                  style={[styles.generateBtn, { backgroundColor: theme.primary }]}
+                  onPress={handleGenerateRotation}
+                  disabled={generating}
+                >
+                  {generating ? (
+                    <ActivityIndicator color="#000" />
+                  ) : (
+                    <>
+                      <FontAwesome5 name="magic" size={14} color="#000" />
+                      <Text style={styles.generateBtnText}>Setup & Start Rotation</Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+              ) : (
+                <Text style={{ color: theme.textSecondary, marginTop: 10, fontSize: 12 }}>
+                  Waiting for the group admin to start the cycle.
+                </Text>
+              )}
+            </View>
           ) : (
             timeline.map((item, index) => {
               const isLast = index === timeline.length - 1;
@@ -205,4 +270,24 @@ const styles = StyleSheet.create({
   
   nameText: { fontSize: 20, fontWeight: 'bold', marginBottom: 6 },
   amountText: { fontSize: 14, fontWeight: '600' },
+   emptyState: { 
+    marginTop: 60, 
+    alignItems: 'center', 
+    paddingHorizontal: 40 
+  },
+  generateBtn: { 
+    marginTop: 24, 
+    flexDirection: 'row', 
+    height: 56, 
+    width: '100%', 
+    borderRadius: 28, 
+    justifyContent: 'center', 
+    alignItems: 'center', 
+    gap: 10 
+  },
+  generateBtnText: { 
+    color: '#000', 
+    fontSize: 16, 
+    fontWeight: 'bold' 
+  },
 });

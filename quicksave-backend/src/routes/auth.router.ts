@@ -1,9 +1,10 @@
 import { Router } from 'express';
 import { validate } from '../middleware/validate';
-import { loginSchema, logoutSchema, refreshTokenSchema, registerSchema, resendOtpSchema, verifyOtpSchema } from '../modules/auth/auth.schema';
-import { login, logout, refreshTokens, register, resendOtp, verifyOtp, changePassword,enable2FA } from '../controllers/auth/auth.controller';
+import { forgotPasswordSchema, loginSchema, logoutSchema, refreshTokenSchema, registerSchema, resendOtpSchema, resetPasswordSchema, sendSmsCodeSchema, verifyOtpSchema } from '../modules/auth/auth.schema';
+import { login, logout, refreshTokens, register, resendOtp, verifyOtp, changePassword,enable2FA, forgotPassword, resetPassword, sendSmsCode } from '../controllers/auth/auth.controller';
 import { authLimiter } from '../middleware/rateLimiter';
 import { requireAuth } from '../middleware/auth';
+import { getActiveSessions, logoutAllDevices, revokeSession } from '../controllers/auth/session.controller';
 
 const router = Router();
 
@@ -28,4 +29,10 @@ router.get('/me', requireAuth, (req, res) => {
 router.put('/change-password', requireAuth, changePassword);
 router.post('/2fa/enable', requireAuth, enable2FA);
 
+router.post('/forgot-password', validate(forgotPasswordSchema), forgotPassword);
+router.post('/reset-password', validate(resetPasswordSchema), resetPassword);
+router.post('/send-sms-code', validate(sendSmsCodeSchema), sendSmsCode);
+router.get('/sessions', requireAuth, getActiveSessions);
+router.delete('/sessions/all', requireAuth, logoutAllDevices);
+router.delete('/sessions/:sessionId', requireAuth, revokeSession);
 export default router;

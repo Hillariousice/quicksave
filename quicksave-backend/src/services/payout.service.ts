@@ -1,6 +1,8 @@
 import prisma from "../config/database";
 import { logger } from "../config/logger";
-import { groupService } from "./group.services";
+import { groupService } from "./group.service";
+import { getIo } from "../config/socket";
+import { sendPushNotification } from "../utils/pushNotification";
 
 export const payoutService = {
   async processNextPayout(groupId: string) {
@@ -23,7 +25,7 @@ export const payoutService = {
     }
 
     // 4. Find the NEXT person in line to get paid
-    // 👉 FIX: Added "as any" to bypass the stale TypeScript cache!
+    // 👉 Added "as any" to bypass the stale TypeScript cache!
     const nextSlot = await prisma.rotationSlot.findFirst({
       where: { groupId, status: 'PENDING' },
       orderBy: { position: 'asc' },
@@ -87,6 +89,21 @@ export const payoutService = {
     const message = `🎉 ${nextSlot.user.firstName} just received the payout of ₦${expectedPayout}!`;
     await groupService.logAndBroadcast(groupId, 'PAYOUT_SENT', message);
 
+    const io = getIo();
+    io.to(`user_${recipientUserId}`).emit('walletUpdated'); // Triggers balance refresh
+    io.to(`user_${recipientUserId}`).emit('payoutReceived', {
+      amount: expectedPayout,
+      groupName: group.name
+    });
+
+    await sendPushNotification(
+      nextSlot.user.pushToken,
+      'Payout Received! 🎉',
+      `₦${expectedPayout} from ${group.name} was just credited to your wallet.`,
+
+      // 👉 CRITICAL: This exact payload is what `handleNotificationTap` reads!
+      { type: 'PAYOUT', groupId, amount: expectedPayout, reference: `PAYOUT_${Date.now()}` }
+    );
     logger.info({ groupId, recipientUserId, amount: expectedPayout }, 'Payout processed successfully');
     return { success: true, recipient: nextSlot.user.firstName, amount: expectedPayout };
   }

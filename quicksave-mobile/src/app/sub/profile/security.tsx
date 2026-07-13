@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, Switch, ScrollView, useColorScheme } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, Switch, ScrollView, useColorScheme, ActivityIndicator, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
-import { FontAwesome5, Feather } from '@expo/vector-icons';
+import { FontAwesome5, Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { Colors } from '@/theme/Colors';
+import * as SecureStore from 'expo-secure-store';
+import { api } from '@/api/client';
 
 export default function SecurityScreen() {
   const router = useRouter();
@@ -13,8 +15,60 @@ export default function SecurityScreen() {
   const [faceId, setFaceId] = useState(true);
   const [pinLogin, setPinLogin] = useState(true);
   const [twoFactor, setTwoFactor] = useState(false);
+  const [sessions, setSessions] = useState<any[]>([]);
+  const [isSessionsExpanded, setIsSessionsExpanded] = useState(false);
+  const [loadingSessions, setLoadingSessions] = useState(false);
 
-  const SettingRow = ({ icon, label, hasSwitch, value, onValueChange, onPress, rightText }: any) => (
+
+    useEffect(() => {
+    SecureStore.getItemAsync('biometricsEnabled').then(val => {
+      const isEnabled = val === 'true';
+      setBiometrics(isEnabled);
+      setFaceId(isEnabled);
+    });
+    fetchActiveSessions();
+  }, []);
+
+   const fetchActiveSessions = async () => {
+  setLoadingSessions(true);
+  try {
+    const res = await api.get('/auth/sessions'); // Hits the new endpoint
+    setSessions(res.data.data);
+  } catch (error) {
+    console.error("Failed to fetch sessions", error);
+  } finally {
+    setLoadingSessions(false);
+  }
+};
+   const handleLogoutAll = async () => {
+  Alert.alert("Are you sure?", "You will be logged out of all other devices.", [
+    { text: "Cancel" },
+    { 
+      text: "Logout Others", 
+      style: "destructive", 
+      onPress: async () => {
+         await api.delete('/auth/sessions/all');
+         fetchActiveSessions(); // Refresh list
+      }
+    }
+  ]);
+};
+
+  const handleToggleBiometrics = async (value: boolean) => {
+    setBiometrics(value);
+    await SecureStore.setItemAsync('biometricsEnabled', value ? 'true' : 'false');
+  };
+   const handleFaceIdToggle = async (value: boolean) => {
+    setFaceId(value);
+    await SecureStore.setItemAsync('biometricsEnabled', value ? 'true' : 'false');
+  };
+    const handleTogglePin = async (value: boolean) => {
+    setPinLogin(value);
+    // You would connect to your backend here to disable the PIN
+    // await api.post('/security/disable-pin', { pin });
+  };
+  
+  const SettingRow = ({ icon, label, hasSwitch, value, onValueChange, onPress, rightText, isExpanded }: any) => (
     <TouchableOpacity style={styles.settingRow} onPress={onPress} disabled={hasSwitch}>
       <View style={styles.settingLeft}>
         <Feather name={icon} size={18} color={theme.primary} style={styles.settingIcon} />
@@ -30,11 +84,16 @@ export default function SecurityScreen() {
       ) : (
         <View style={styles.settingRight}>
           {rightText && <Text style={[styles.rightText, { color: theme.textSecondary }]}>{rightText}</Text>}
-          <Feather name="chevron-right" size={18} color={theme.textSecondary} />
+          <Feather 
+            name={isExpanded ? "chevron-down" : "chevron-right"} 
+            size={18} 
+            color={theme.textSecondary} 
+          />
         </View>
       )}
     </TouchableOpacity>
   );
+
 
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }]}>
@@ -50,11 +109,11 @@ export default function SecurityScreen() {
         
         <Text style={[styles.sectionTitle, { color: theme.textSecondary }]}>AUTHENTICATION</Text>
         <View style={[styles.card, { backgroundColor: theme.inputBg }]}>
-          <SettingRow icon="fingerprint" label="Biometric Login" hasSwitch value={biometrics} onValueChange={setBiometrics} />
+          <SettingRow icon="fingerprint" label="Biometric Login" hasSwitch value={biometrics} onValueChange={handleToggleBiometrics} />
           <View style={styles.divider} />
-          <SettingRow icon="smile" label="Face ID" hasSwitch value={faceId} onValueChange={setFaceId} />
+          <SettingRow icon="smile" label="Face ID" hasSwitch value={faceId} onValueChange={handleFaceIdToggle} />
           <View style={styles.divider} />
-          <SettingRow icon="grid" label="PIN Login" hasSwitch value={pinLogin} onValueChange={setPinLogin} />
+          <SettingRow icon="grid" label="PIN Login" hasSwitch value={pinLogin} onValueChange={handleTogglePin} />
           <View style={styles.divider} />
           <SettingRow 
             icon="shield" 
@@ -71,12 +130,44 @@ export default function SecurityScreen() {
           {/* 👉 ROUTES TO CHANGE PASSWORD SCREEN */}
           <SettingRow icon="lock" label="Change Password" onPress={() => router.push('/sub/profile/change-password')} />
           <View style={styles.divider} />
-          <SettingRow icon="monitor" label="Active Sessions" rightText="2 devices" onPress={() => {}} />
-        </View>
+          <SettingRow 
+            icon="monitor" 
+            label="Active Sessions" 
+            rightText={`${sessions.length} devices`} 
+            isExpanded={isSessionsExpanded}
+            onPress={() => setIsSessionsExpanded(!isSessionsExpanded)} 
+          />
+          
+          {isSessionsExpanded && (
+            <View style={styles.sessionDropdown}>
+              {loadingSessions ? (
+                <ActivityIndicator size="small" color={theme.primary} />
+              ) : (
+                sessions.map((item, index) => (
+                  <View key={item.id} style={[styles.sessionItem, index === 0 && { borderTopWidth: 0 }]}>
+                    <MaterialCommunityIcons 
+                      name={item.device.includes('iPhone') ? "cellphone" : "laptop"} 
+                      size={20} 
+                      color={theme.textSecondary} 
+                    />
+                    <View style={{ flex: 1, marginLeft: 12 }}>
+                      <Text style={[styles.sessionDevice, { color: theme.text }]}>
+                        {item.device} {item.current && <Text style={{ color: theme.primary }}>(This device)</Text>}
+                      </Text>
+                      <Text style={[styles.sessionDetails, { color: theme.textSecondary }]}>
+                        {item.location} • {item.lastActive}
+                      </Text>
+                    </View>
+                  </View>
+                ))
+              )}
+            </View>
+          )}
+            </View>
 
         <Text style={[styles.sectionTitle, { color: theme.textSecondary, marginTop: 24 }]}>DANGER ZONE</Text>
         <View style={[styles.card, { backgroundColor: theme.inputBg }]}>
-          <TouchableOpacity style={styles.dangerRow}>
+          <TouchableOpacity style={styles.dangerRow} onPress={handleLogoutAll}>
             <Feather name="log-out" size={18} color="#FF3B30" />
             <Text style={styles.dangerText}>Log out all devices</Text>
           </TouchableOpacity>

@@ -51,3 +51,12 @@ export const sendMessage = catchAsync(async (req: Request, res: Response) => {
 
   return sendSuccess(res, message, 'Message sent', 201);
 });
+
+export const markAllAsRead = catchAsync(async (req: Request, res: Response) => {
+  const { groupId } = req.body;
+  const userId = req.user.id;
+
+  // In a real app, you'd have a 'ReadReceipt' model or a 'readBy' array
+  // For now, we simulate success
+  return sendSuccess(res, null, 'All messages marked as read');
+});

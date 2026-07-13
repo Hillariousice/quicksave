@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, useColorScheme } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, useColorScheme, ActivityIndicator, Alert } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { FontAwesome5, Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { Colors } from '@/theme/Colors';
@@ -17,7 +17,7 @@ export default function TransactionReceiptScreen() {
   const colorScheme = useColorScheme();
   const theme = colorScheme === 'dark' ? Colors.dark : Colors.light;
 
-  const amount = new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN' }).format(txData.amount || 10000);
+  const amount = new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN' }).format(tx.amount || 10000);
   const receiptRef = useRef<View>(null);
 
   useEffect(() => {

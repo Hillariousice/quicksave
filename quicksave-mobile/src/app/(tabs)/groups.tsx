@@ -14,6 +14,7 @@ import ErrorState from '@/components/ui/error-state';
 import EmptyState from '@/components/ui/empty-state';
 import { useDispatch } from 'react-redux';
 import PendingSyncBadge from '@/components/ui/pendingsync-badge';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 
 export default function GroupsScreen() {
   const router = useRouter();
@@ -78,11 +79,14 @@ export default function GroupsScreen() {
     </View>
   );
 
-  const GroupCard = ({ title, subtitle, progress, nextDate, membersCount, id, key }: any) => {
-     const hasPendingAction = pendingContributions.some((c: any) => c.groupId === id);
+const GroupCard = ({ title, subtitle, progress, nextDate, membersCount, id }: any) => {
+  const hasPendingAction = pendingContributions.some((c: any) => c.groupId === id);
 
   return (
-    <TouchableOpacity key={key} style={[styles.card, { backgroundColor: theme.inputBg, borderColor: theme.inputBorder }]} onPress={() => router.push(`/groups/${id}`)}>
+    <TouchableOpacity 
+      style={[styles.card, { backgroundColor: theme.inputBg, borderColor: theme.inputBorder }]} 
+      onPress={() => router.push(`/sub/groups/${id}`)} // Use 'id' prop here
+    >
       <View style={styles.cardHeader}>
         <View>
           <Text style={[styles.cardTitle, { color: theme.text }]}>{title}</Text>
@@ -93,7 +97,7 @@ export default function GroupsScreen() {
         </View>
       </View>
      
-     {hasPendingAction && <PendingSyncBadge />}
+      {hasPendingAction && <PendingSyncBadge />}
 
       <View style={styles.progressContainer}>
         <View style={styles.progressRow}>
@@ -111,7 +115,6 @@ export default function GroupsScreen() {
           <Text style={[styles.nextPayoutDate, { color: theme.text }]}>{nextDate}</Text>
         </View>
         <View style={styles.avatarGroup}>
-          {/* Overlapping Mock Avatars */}
           <Image source={{ uri: 'https://i.pravatar.cc/150?img=1' }} style={[styles.avatar, { borderColor: theme.inputBg, zIndex: 3 }]} />
           <Image source={{ uri: 'https://i.pravatar.cc/150?img=2' }} style={[styles.avatar, { borderColor: theme.inputBg, zIndex: 2, marginLeft: -10 }]} />
           <Image source={{ uri: 'https://i.pravatar.cc/150?img=3' }} style={[styles.avatar, { borderColor: theme.inputBg, zIndex: 1, marginLeft: -10 }]} />
@@ -121,14 +124,13 @@ export default function GroupsScreen() {
         </View>
       </View>
 
-      <TouchableOpacity 
-        style={[styles.detailsButton, { borderColor: theme.inputBorder }]}
-        onPress={() =>router.push({pathname:'/sub/groups/[id]', params: {id: groups?.id}})} 
-      >
+      {/* FIXED: Changed 'groups?.id' to 'id' */}
+      <View style={[styles.detailsButton, { borderColor: theme.inputBorder }]}>
         <Text style={[styles.detailsButtonText, { color: theme.text }]}>View Details</Text>
-      </TouchableOpacity>
+      </View>
     </TouchableOpacity>
-  )};
+  );
+};
 
   const CreateGroupPromoCard = () => (
     <TouchableOpacity  style={[
@@ -191,28 +193,22 @@ export default function GroupsScreen() {
             ) : (
               <>
                 <CreateGroupPromoCard />
-               {activeGroups.map((group: any) => (
-  // <TouchableOpacity 
-  //   key={group.id} 
-  //   onPress={() => router.push(`/sub/groups/${group.id}`)}
-  // >
-  //   <GroupCard 
-  //     title={group.name} 
-  //     subtitle={`${group.frequency} Contribution`} 
-  //     progress={group.progress || 0} 
-  //     // Formatting the ISO date from backend
-  //     nextDate={group.nextPayoutDate ? new Date(group.nextPayoutDate).toLocaleDateString() : 'TBD'} 
-  //     membersCount={group.membersCount || 0} 
-  //   />
-  // </TouchableOpacity>
-    <GroupCard 
-      title={group.name} 
-      subtitle={`${group.frequency} Contribution`} 
-      progress={group.progress || 0} 
-      // Formatting the ISO date from backend
-      nextDate={group.nextPayoutDate ? new Date(group.nextPayoutDate).toLocaleDateString() : 'TBD'} 
-      membersCount={group.membersCount || 0} 
-    />
+              {activeGroups.map((group: any) => (
+                <Animated.View 
+    key={group.id}
+    // Stagger the animation by multiplying the index!
+    entering={FadeInDown.delay(index * 100).springify().damping(12)}
+  >
+  <GroupCard 
+    key={group.id} // Standard React key
+    id={group.id}  // Pass the ID to the component
+    title={group.name} 
+    subtitle={`${group.frequency} Contribution`} 
+    progress={group.progress || 0} 
+    nextDate={group.nextPayoutDate ? new Date(group.nextPayoutDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'TBD'} 
+    membersCount={group.membersCount || 0} 
+  />
+  </Animated.View>
 ))}
               </>
             )}

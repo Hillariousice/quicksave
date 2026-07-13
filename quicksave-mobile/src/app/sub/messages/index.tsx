@@ -1,11 +1,11 @@
-import React, { useEffect } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, FlatList, Image, useColorScheme, TextInput } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, FlatList, Image, useColorScheme, TextInput, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { FontAwesome5, Feather, MaterialIcons } from '@expo/vector-icons';
 import { Colors } from '@/theme/Colors';
 import { useAppDispatch, useAppSelector } from '@/store';
-import { ChatService } from '@/api/services/chat.service';
-import { setConversations } from '@/store/slices/chatSlice';
+import api, { ChatService } from '@/api/services/chat.service';
+import { markLocalAsRead, setConversations } from '@/store/slices/chatSlice';
 
 
 
@@ -16,6 +16,21 @@ export default function MessagesListScreen() {
   const theme = colorScheme === 'dark' ? Colors.dark : Colors.light;
 
   const { conversations, loading } = useAppSelector(state => state.chat);
+const [searchQuery, setSearchQuery] = useState('');
+ 
+
+  // 1. Search Filtering
+  const filteredConversations = conversations.filter((c: any) => 
+    c.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    c.text.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const handleMarkAllRead = async () => {
+    try {
+      await api.post('/chats/mark-all-read'); // Call backend
+      dispatch(markLocalAsRead()); // Update Redux UI
+    } catch (e) { console.error(e); }
+  };
 
     useEffect(() => {
     const loadConversations = async () => {
@@ -58,12 +73,17 @@ export default function MessagesListScreen() {
       {/* SEARCH */}
       <View style={[styles.searchContainer, { backgroundColor: theme.inputBg }]}>
         <Feather name="search" size={18} color={theme.textSecondary} style={styles.searchIcon} />
-        <TextInput style={[styles.searchInput, { color: theme.text }]} placeholder="Search conversations..." placeholderTextColor={theme.textSecondary} />
+          <TextInput 
+          style={[styles.searchInput, { color: theme.text }]} 
+          placeholder="Search conversations..." 
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+        />
       </View>
 
       <View style={styles.listHeader}>
         <Text style={[styles.recentText, { color: theme.textSecondary }]}>RECENT</Text>
-        <TouchableOpacity><Text style={[styles.markRead, { color: theme.primary }]}>Mark all as read</Text></TouchableOpacity>
+        <TouchableOpacity onPress={handleMarkAllRead}><Text style={[styles.markRead, { color: theme.primary }]}>Mark all as read</Text></TouchableOpacity>
       </View>
 
       {/* CHAT LIST */}
@@ -71,7 +91,7 @@ export default function MessagesListScreen() {
         <ActivityIndicator size="large" color={theme.primary} style={{ marginTop: 20 }} />
       ) : (
         <FlatList
-          data={conversations}
+          data={filteredConversations}
           keyExtractor={item => item.id}
           contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 100 }}
           renderItem={({ item }) => (

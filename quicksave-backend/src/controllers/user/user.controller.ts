@@ -4,6 +4,7 @@ import { catchAsync } from '../../utils/catchAsync';
 import { sendSuccess } from '../../utils/response';
 import { AppError } from '../../utils/AppError';
 import { env } from '../../config/env';
+import { authService } from '../../services/auth.service';
 
 export const searchUsers = catchAsync(async (req: Request, res: Response) => {
   const { q } = req.query;
@@ -102,12 +103,42 @@ export const getBankAccounts = catchAsync(async (req: Request, res: Response) =>
 // Update Profile Fix: Also allow updating bio if exists
 export const updateProfile = catchAsync(async (req: Request, res: Response) => {
   const userId = req.user.id;
-  const { firstName, lastName, phone, bio } = req.body;
+  const { firstName, lastName, phone, bio, avatar } = req.body;
 
   const updatedUser = await prisma.user.update({
     where: { id: userId },
-    data: { firstName, lastName, phone } // Note: Add bio to Prisma schema if needed
+    data: { firstName, lastName, phone, bio, avatar } // Note: Add bio to Prisma schema if needed
   });
 
   return sendSuccess(res, updatedUser, 'Profile updated');
 });
+
+export const updatePushToken = catchAsync(async (req: Request, res: Response) => {
+  const userId = req.user.id;
+  const { pushToken } = req.body;
+
+  await prisma.user.update({
+    where: { id: userId },
+    data: { pushToken }
+  });
+
+  return sendSuccess(res, null, 'Push token synced', 200);
+});
+
+
+export const getAvailableBanks = catchAsync(async (req: Request, res: Response) => {
+  // Paystack's public API to get all Nigerian banks
+  const response = await fetch('https://api.paystack.co/bank?country=nigeria', {
+    headers: { Authorization: `Bearer ${env.PAYSTACK_SECRET_KEY}` }
+  });
+  
+  const data = await response.json() as any;
+  
+  if (!data.status) {
+    throw new AppError('Failed to fetch bank list', 500);
+  }
+
+  // Return the list of banks (contains name and code)
+  return sendSuccess(res, data.data, 'Banks retrieved successfully');
+});
+

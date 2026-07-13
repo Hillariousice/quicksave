@@ -1,22 +1,23 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, Profiler } from 'react';
 import { 
   View, Text, StyleSheet, SafeAreaView, TouchableOpacity, 
   ScrollView, Image, useColorScheme, ActivityIndicator, 
   Alert,
   Modal
 } from 'react-native';
-import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { FontAwesome5, Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 
 import { Colors } from '@/theme/Colors';
-// import { api } from '@/api/client';
+import { api } from '@/api/client';
 // import { timeAgo } from '@/utils/time';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { fetchGroupActivity, fetchGroupDetails } from '@/store/slices/groupSlice';
 import LoadingState from '@/components/ui/loading-state';
 import { updateStatusThunk } from '@/store/slices/groupSlice';
 import { timeAgo } from '@/utils/time';
-
+import {socketService} from '@/api/services/socket.service'
+import CachedAvatar from '@/components/ui/cached-avatar';
 
 export default function GroupDetailScreen() {
   const router = useRouter();
@@ -32,19 +33,73 @@ export default function GroupDetailScreen() {
   // 👉 Pull current group details from Redux
   const { currentGroup, currentTimeline, currentActivity, isDetailLoading } = useAppSelector(state => state.groups);
 
-  console.log("timeline", currentTimeline)
-  console.log("activity", currentActivity)
-  console.log("group", currentGroup)
+  const [isViewingLive, setIsViewingLive] = useState(false);
   const [loading, setLoading] = useState(false); // Set to true when hitting real API
-  // const [groupData, setGroupData] = useState<any>(null);
+ 
   const [menuVisible, setMenuVisible] = useState(false);
-  // Fetch the data from your Day 17 & 20 endpoints!
- useEffect(() => {
-    if (groupId) {
+  const [activities, setActivities] = useState<any[]>([]);
+  
+  useEffect(() => {
+    if (!groupId || groupId === 'undefined'){ return};
       dispatch(fetchGroupDetails(groupId as string));
       dispatch(fetchGroupActivity(groupId as string));
-    }
+    
   }, [groupId]);
+
+   useEffect(() => {
+    const fetchHistory = async () => {
+      try {
+        
+        const res = await api.get(`/groups/${groupId}/activity`);
+        
+        // Map the backend DB logs to our UI format
+       const formattedLogs = res.data.data.map((log: any) => ({
+  id: log.id,
+  text: log.message,
+  time: timeAgo(log.createdAt),
+  type: log.action === 'CONTRIBUTION' ? 'contribution' : 'alert',
+  // Ensure this is a string, though usually API responses already are
+  createdAt: typeof log.createdAt === 'string' ? log.createdAt : new Date(log.createdAt).toISOString(),
+}))
+        setActivities(formattedLogs);
+      } catch (error) {
+        console.log("Could not fetch activity history.");
+      }
+    };
+    if (groupId) fetchHistory();
+  }, [groupId]);
+  
+  // The Room Lifecycle Hook
+   useFocusEffect(
+    useCallback(() => {
+      if (!groupId) return;
+
+      // When screen focuses: Join room & attach listener
+      socketService.joinGroupScreen(groupId as string);
+      setIsViewingLive(true);
+
+    const handleNewActivity = (newActivity: any) => {
+  // Ensure incoming socket data converts dates to strings immediately
+  const serializableActivity = {
+    ...newActivity,
+    createdAt: new Date().toISOString(), // Use string here
+    time: 'Just now'
+  };
+  setActivities((prev) => [serializableActivity, ...prev]);
+};
+
+      socketService.onScreenActivity(handleNewActivity);
+
+      // When screen unfocuses: Leave room & detach listener
+      return () => {
+        socketService.leaveGroupScreen(groupId as string);
+        socketService.offScreenActivity(handleNewActivity);
+        setIsViewingLive(false);
+      };
+    }, [groupId])
+  );
+
+
 
   const handleChangeStatus = () => {
     setMenuVisible(false);
@@ -103,6 +158,23 @@ export default function GroupDetailScreen() {
     );
   };
 
+    // 👉 The callback that receives the render metrics!
+  const onRenderCallback = (
+    id: string, // the "id" prop of the Profiler tree
+    phase: "mount" | "update", // "mount" (first render) or "update" (re-render)
+    actualDuration: number, // time spent rendering the committed update
+    baseDuration: number, // estimated time to render the entire subtree
+    startTime: number,
+    commitTime: number
+  ) => {
+    // Only log heavy renders over 16ms (which causes frame drops below 60fps)
+    if (actualDuration > 16) {
+      console.warn(`[React Profiler 🐢] ${id} took ${actualDuration.toFixed(2)}ms to ${phase}`);
+    } else {
+      console.log(`[React Profiler ⚡] ${id} took ${actualDuration.toFixed(2)}ms to ${phase}`);
+    }
+  };
+
 
   const renderStatusIcon = (status: string) => {
     switch (status) {
@@ -148,6 +220,12 @@ export default function GroupDetailScreen() {
         {currentGroup?.status}
       </Text>
     </View>
+     {isViewingLive && (
+              <View style={[styles.activeBadge, { backgroundColor: theme.primary + '20' }]}>
+                <View style={[styles.activeDot, { backgroundColor: theme.primary }]} />
+                <Text style={[styles.activeText, { color: theme.primary }]}>Live View</Text>
+              </View>
+            )}
   </View>
 
         <TouchableOpacity style={styles.headerIcon} onPress={() => setMenuVisible(true)}>
@@ -168,8 +246,14 @@ export default function GroupDetailScreen() {
             </TouchableOpacity>
 
             <View style={[styles.dropdownDivider, { backgroundColor: theme.inputBorder }]} />
+            <TouchableOpacity style={styles.dropdownItem} onPress={()=> router.push(`/sub/messages/group/${groupId}`)}>
+              <Feather name="message-circle" size={16} color={theme.text} />
+              <Text style={[styles.dropdownText, { color: theme.text }]}>Group message</Text>
+            </TouchableOpacity>
+          
+             <View style={[styles.dropdownDivider, { backgroundColor: theme.inputBorder }]} />
 
-            <TouchableOpacity style={styles.dropdownItem} onPress={handleDeleteGroup}>
+             <TouchableOpacity style={styles.dropdownItem} onPress={handleDeleteGroup}>
               <Feather name="trash-2" size={16} color="#FF3B30" />
               <Text style={[styles.dropdownText, { color: '#FF3B30' }]}>Delete Group</Text>
             </TouchableOpacity>
@@ -178,6 +262,7 @@ export default function GroupDetailScreen() {
         </TouchableOpacity>
       </Modal>
 
+  <Profiler id="GroupDetailScrollView" onRender={onRenderCallback}>
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         
         {/* NEXT PAYOUT CARD */}
@@ -227,7 +312,7 @@ export default function GroupDetailScreen() {
               
               {/* Avatar */}
               {item.user?.avatar ? (
-                <Image source={{ uri: item.user.avatar }} style={styles.avatar} />
+                  <CachedAvatar uri={item.avatar} size={32} style={{ marginRight: 12 }} />
               ) : (
                 <View style={[styles.avatarPlaceholder, { backgroundColor: theme.background }]}>
                   <Feather name="user" size={14} color={theme.textSecondary} />
@@ -267,31 +352,48 @@ export default function GroupDetailScreen() {
         </View>
 
        <View style={[styles.activityContainer, { backgroundColor: theme.inputBg }]}>
-          {currentActivity?.map((activity: any, index: number) => (
-            <View key={activity.id} style={styles.timelineRow}>
-              <View style={styles.timelineGraphic}>
-                <View style={[styles.timelineIcon, { backgroundColor: theme.background }]}>
-                  <FontAwesome5 
-                    name={activity.action === 'JOINED' ? 'user-plus' : 'bell'} 
-                    size={10} 
-                    color={theme.primary} 
-                  />
-                </View>
-                {index !== currentActivity.length - 1 && <View style={styles.timelineLine} />}
-              </View>
-              <View style={styles.timelineContent}>
-                <Text style={[styles.timelineText, { color: theme.text }]}>
-                  {activity.user?.firstName} {activity.message}
-                </Text>
-                <Text style={[styles.timelineTime, { color: theme.textSecondary }]}>
-                  {timeAgo(activity.createdAt)}
-                </Text>
-              </View>
-            </View>
-          ))}
-        </View>
-      </ScrollView>
+          {activities.length === 0 ? (
+             <Text style={{ color: theme.textSecondary, textAlign: 'center', padding: 10 }}>No activity yet. Be the first to contribute!</Text>
+          ) : (
+            activities.map((activity, index) => {
+              const isLast = index === activities.length - 1;
+              let iconName = "bell";
+              let iconColor = theme.primary;
+              let iconBg = `${theme.primary}15`;
 
+              if (activity.type === 'contribution') { 
+                iconName = 'money-bill-wave'; 
+                iconColor = '#34C759'; 
+                iconBg = '#34C75915'; 
+              } else if (activity.type === 'chat') { 
+                iconName = 'message-square'; 
+                iconColor = theme.textSecondary; 
+                iconBg = theme.background; 
+              }
+
+              return (
+                <View key={activity.id} style={styles.timelineRow}>
+                  <View style={styles.timelineGraphic}>
+                    <View style={[styles.timelineIcon, { backgroundColor: iconBg }]}>
+                      <FontAwesome5 name={iconName as any} size={12} color={iconColor} />
+                    </View>
+                    {!isLast && <View style={[styles.timelineLine, { backgroundColor: theme.inputBorder }]} />}
+                  </View>
+                  <View style={styles.timelineContent}>
+                    <Text style={[styles.timelineText, { color: theme.text }]}>{activity.text}</Text>
+                    {/* Convert static time to dynamic "timeAgo" if it's not a fresh socket event */}
+                    <Text style={[styles.timelineTime, { color: theme.textSecondary }]}>
+                      {activity.time === 'Just now' ? activity.time : timeAgo(activity.createdAt)}
+                    </Text>
+                  </View>
+                </View>
+              );
+            })
+          )}
+        </View>
+     
+      </ScrollView>
+</Profiler>
       {/* FOOTER ACTION */}
       <View style={[styles.footer, { backgroundColor: theme.background }]}>
         <TouchableOpacity style={[styles.contributeButton, { backgroundColor: theme.primary }]} onPress={() => router.push(`/sub/groups/${groupId}/contribute-member`)}>
@@ -313,7 +415,7 @@ const styles = StyleSheet.create({
   headerIcon: { padding: 5 },
   headerTitleContainer: { alignItems: 'center' },
   headerTitle: { fontSize: 16, fontWeight: 'bold', marginBottom: 4 },
-  activeBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#34C75915', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12 },
+  activeBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#34C75915', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12 , marginBottom: 4},
   activeDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#34C759', marginRight: 4 },
   activeText: { fontSize: 10, color: '#34C759', fontWeight: 'bold' },
 

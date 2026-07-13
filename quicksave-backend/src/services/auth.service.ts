@@ -112,5 +112,39 @@ export const authService = {
       // If the token is completely mangled, just ignore it. The user is essentially logged out anyway.
       return true; 
     }
-  }
+  },
+
+  // 👉 NEW: Send Password Reset OTP
+  async sendPasswordResetOtp(email: string) {
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const redisKey = `reset_otp:${email}`;
+    await redis.setex(redisKey, 900, otp); // Expires in 15 mins
+
+    const html = `
+      <div style="font-family: Arial, sans-serif; padding: 20px;">
+        <h2>Password Reset Request 🔐</h2>
+        <p>You requested to reset your Quicksave password. Your reset code is:</p>
+        <h1 style="color: #FF8C00; letter-spacing: 5px;">${otp}</h1>
+        <p>This code expires in 15 minutes. If you didn't request this, please ignore this email.</p>
+      </div>
+    `;
+    await sendEmail(email, 'Quicksave Password Reset', html);
+  },
+
+  // 👉 NEW: Verify Reset OTP
+  async verifyResetOtp(email: string, otp: string) {
+    const redisKey = `reset_otp:${email}`;
+    const storedOtp = await redis.get(redisKey);
+
+    if (!storedOtp) throw new AppError('OTP expired or invalid. Please request a new one.', 400);
+    if (storedOtp !== otp) throw new AppError('Incorrect OTP code.', 400);
+
+    await redis.del(redisKey); // OTP is valid, destroy it so it can't be reused
+    return true;
+  },
+
+
 };
+
+
+

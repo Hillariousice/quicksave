@@ -23,8 +23,8 @@ export default function WalletDashboardScreen() {
 
   // 👉 2. Pull data directly from Global Redux State!
   const { balance, transactions, isLoading } = useAppSelector((state) => state.wallet);
-const { isConnected, isInternetReachable } = useAppSelector((state) => state.network);
-const isOffline = isConnected === false || isInternetReachable === false;
+  const { isConnected, isInternetReachable } = useAppSelector((state) => state.network);
+  const isOffline = isConnected === false || isInternetReachable === false;
   const [showBalance, setShowBalance] = useState(true);
   const [loading, setLoading] = useState(true);
   
@@ -50,7 +50,7 @@ const isOffline = isConnected === false || isInternetReachable === false;
     }
   };
 
-  if (loading) {
+  if (isLoading && transactions.length === 0) {
     return (
       <View style={[styles.loadingContainer, { backgroundColor: theme.background }]}>
         <ActivityIndicator size="large" color={theme.primary} />
@@ -67,7 +67,7 @@ const isOffline = isConnected === false || isInternetReachable === false;
           <FontAwesome5 name="arrow-left" size={18} color={theme.primary} />
         </TouchableOpacity>
         <Text style={[styles.headerTitle, { color: theme.primary }]}>QuickSave</Text>
-        <TouchableOpacity style={styles.headerIcon}>
+        <TouchableOpacity style={styles.headerIcon} onPress={() => router.push('/(tabs)/profile')}>
           <View style={[styles.avatarPlaceholder, { backgroundColor: theme.inputBg }]}>
             <Feather name="user" size={16} color={theme.primary} />
           </View>
@@ -135,7 +135,7 @@ const isOffline = isConnected === false || isInternetReachable === false;
         {/* RECENT TRANSACTIONS */}
         <View style={styles.sectionHeader}>
           <Text style={[styles.sectionTitle, { color: theme.textSecondary }]}>Recent Transactions</Text>
-          <TouchableOpacity><Text style={[styles.seeAll, { color: theme.primary }]}>See All</Text></TouchableOpacity>
+          <TouchableOpacity onPress={() => router.push('/sub/wallet/transaction-history')}><Text style={[styles.seeAll, { color: theme.primary }]}>See All</Text></TouchableOpacity>
         </View>
 
         <View style={styles.transactionsContainer}>

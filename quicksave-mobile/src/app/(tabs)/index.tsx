@@ -12,6 +12,7 @@ import { GroupCard } from '@/components/card/group-card';
 import { useAppSelector, useAppDispatch } from '@/store';
 import { fetchWalletData } from '@/store/slices/walletSlice';
 import { fetchMyGroups } from '@/store/slices/groupSlice';
+import CachedAvatar from '@/components/ui/cached-avatar';
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -90,7 +91,7 @@ useEffect(() => {
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.avatarContainer} onPress={()=> router.push('/profile')}>
-              <Image source={{ uri: user?.avatar || 'https://i.pravatar.cc/150?img=11' }} style={styles.avatar} />
+              <CachedAvatar uri={user?.avatar} size={44} />
             </TouchableOpacity>
           </View>
           {pendingContributions.length > 0 && (
@@ -147,12 +148,20 @@ useEffect(() => {
           <ActionBtn icon="arrow-down" label="Fund" theme={theme} onPress={()=> router.push('/sub/wallet/fund')} />
           <ActionBtn icon="external-link" label="Withdraw" theme={theme} onPress={()=> router.push('/sub/wallet/withdraw')}/>
           <ActionBtn icon="users" label="Invite" theme={theme}   onPress={() => {
-              if (upcomingGroup?.id) {
-                router.push({pathname:'/sub/groups/[id]/invite-member', params: {id: upcomingGroup.id}});
-              } else {
-                console.log("No group found to invite to!");
-              }
-            }} />
+    // If the user is in at least one group, let them invite people to it
+    if (activeGroups.length > 0) {
+      // We use the 'upcomingGroup' or the first active group
+      const targetId = upcomingGroup?.id || activeGroups[0].id;
+      router.push({
+        pathname: '/sub/groups/[id]/invite-member', 
+        params: { id: targetId }
+      });
+    } else {
+      // 👉 NEW USER PATH: They aren't in a group, so they probably 
+      // want to JOIN one using a code they received elsewhere.
+      router.push('/sub/groups/join'); 
+    }
+  }}  />
         </View>
 
         {/* ACTIVE GROUPS */}

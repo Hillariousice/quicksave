@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, TextInput, ScrollView, useColorScheme } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, TextInput, ScrollView, useColorScheme, Alert, Linking } from 'react-native';
 import { useRouter } from 'expo-router';
 import { FontAwesome5, Feather } from '@expo/vector-icons';
 import { Colors } from '@/theme/Colors';
+import { UserService } from '@/api/services/user.service';
 
 const FAQS = [
   { id: '1', question: 'How do I join a group?', answer: 'Enter an invite code provided by the group admin on the Join Group screen.' },
@@ -16,9 +17,17 @@ export default function HelpSupportScreen() {
   const theme = colorScheme === 'dark' ? Colors.dark : Colors.light;
 
   const [expandedId, setExpandedId] = useState<string | null>(null);
-
-  const CategoryCard = ({ icon, title }: any) => (
-    <TouchableOpacity style={[styles.catCard, { backgroundColor: theme.inputBg }]}>
+    const handleEmail = async () => {
+    const email = 'quicksave.app@gmail.com';
+    const url = `mailto:${email}`;
+    try {
+      await Linking.openURL(url);
+    } catch (err) {
+      Alert.alert('Error', 'Unable to open mail client');
+    }
+  };
+  const CategoryCard = ({ icon, title, onPress }: any) => (
+    <TouchableOpacity style={[styles.catCard, { backgroundColor: theme.inputBg }]} onPress={onPress}>
       <View style={[styles.catIconBg, { backgroundColor: theme.primary + '15' }]}>
         <Feather name={icon} size={20} color={theme.primary} />
       </View>
@@ -34,9 +43,9 @@ export default function HelpSupportScreen() {
           <FontAwesome5 name="arrow-left" size={18} color={theme.primary} />
           <Text style={[styles.headerTitle, { color: theme.primary, marginLeft: 16 }]}>Help & Support</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={[styles.downloadBtn, { backgroundColor: theme.inputBg }]}>
+        {/* <TouchableOpacity style={[styles.downloadBtn, { backgroundColor: theme.inputBg }]}>
           <Feather name="download" size={16} color={theme.textSecondary} />
-        </TouchableOpacity>
+        </TouchableOpacity> */}
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
@@ -49,10 +58,10 @@ export default function HelpSupportScreen() {
         {/* CATEGORIES */}
         <Text style={[styles.sectionTitle, { color: theme.text }]}>Categories</Text>
         <View style={styles.grid}>
-          <CategoryCard icon="rocket" title="Getting Started" />
-          <CategoryCard icon="shield" title="Account & Security" />
-          <CategoryCard icon="users" title="Savings Groups" />
-          <CategoryCard icon="credit-card" title="Payouts & Withdrawals" />
+          <CategoryCard icon="rocket" title="Getting Started" onPress={() => router.push('/auth/register')} />
+          <CategoryCard icon="shield" title="Account & Security" onPress={() => router.push('/sub/profile/security')} />
+          <CategoryCard icon="users" title="Savings Groups" onPress={() => router.push('/(tabs)/groups')} />
+          <CategoryCard icon="credit-card" title="Payouts & Withdrawals" onPress={() => router.push('/sub/wallet/withdraw')} />
         </View>
 
         {/* FAQS */}
@@ -86,7 +95,7 @@ export default function HelpSupportScreen() {
           <Text style={[styles.contactButtonText, { color: '#111' }]}>Chat with us</Text>
         </TouchableOpacity>
         
-        <TouchableOpacity style={[styles.contactButton, { backgroundColor: theme.inputBg, borderWidth: 1, borderColor: theme.inputBorder }]}>
+        <TouchableOpacity style={[styles.contactButton, { backgroundColor: theme.inputBg, borderWidth: 1, borderColor: theme.inputBorder }]} onPress={handleEmail}>
           <Feather name="mail" size={18} color={theme.text} />
           <Text style={[styles.contactButtonText, { color: theme.text }]}>Send an email</Text>
         </TouchableOpacity>

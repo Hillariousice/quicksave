@@ -10,7 +10,8 @@ export default function ContributionDetailScreen() {
   const router = useRouter();
   const { data } = useLocalSearchParams();
   const notification = data ? JSON.parse(data as string) : {};
-  
+  const metadata = notification.metadata || {}; 
+   
   const colorScheme = useColorScheme();
   const theme = colorScheme === 'dark' ? Colors.dark : Colors.light;
 
@@ -39,7 +40,7 @@ export default function ContributionDetailScreen() {
         <Text style={[styles.subText, { color: theme.textSecondary }]}>
           Your contribution for this cycle has been confirmed.
         </Text>
-        <Text style={[styles.amountText, { color: theme.text }]}>{amount}</Text>
+        <Text style={[styles.amountText, { color: theme.text }]}>{metadata.amount?.toLocaleString('en-NG', { style: 'currency', currency: 'NGN' }).replace('.00', '')}</Text>
 
         {/* TRANSACTION DETAILS CARD */}
         <View style={[styles.infoCard, { backgroundColor: theme.inputBg }]}>
@@ -50,11 +51,11 @@ export default function ContributionDetailScreen() {
 
           <View style={styles.detailRow}>
             <Text style={styles.detailLabel}>Group</Text>
-            <Text style={[styles.detailValue, { color: theme.text }]}>Tech Founders XI</Text>
+            <Text style={[styles.detailValue, { color: theme.text }]}>{metadata.groupName}</Text>
           </View>
           <View style={styles.detailRow}>
             <Text style={styles.detailLabel}>Reference</Text>
-            <Text style={[styles.detailValue, { color: theme.text }]}>#QS-99823</Text>
+            <Text style={[styles.detailValue, { color: theme.text }]}>{metadata.reference}</Text>
           </View>
           <View style={styles.detailRow}>
             <Text style={styles.detailLabel}>Payment Method</Text>
@@ -66,7 +67,7 @@ export default function ContributionDetailScreen() {
 
           <View style={styles.divider} />
 
-          <TouchableOpacity style={styles.receiptButton}>
+          <TouchableOpacity style={styles.receiptButton} onPress={() => router.push({pathname: '/sub/wallet/transaction-receipt', params: {id: metadata.transactionId}})}>
             <Feather name="list" size={16} color={theme.text} />
             <Text style={[styles.receiptText, { color: theme.text }]}>View Receipt</Text>
           </TouchableOpacity>

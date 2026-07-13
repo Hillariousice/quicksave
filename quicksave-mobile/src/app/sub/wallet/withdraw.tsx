@@ -9,8 +9,10 @@ import { FontAwesome5, Feather, MaterialCommunityIcons } from '@expo/vector-icon
 
 import { Colors } from '@/theme/Colors';
 import { api } from '@/api/client';
-import { useAppDispatch } from '@/store';
+import { useAppDispatch, useAppSelector } from '@/store';
 import { fetchWalletData } from '@/store/slices/walletSlice';
+import { WalletService } from '@/api/services/wallet.service';
+import { UserService } from '@/api/services/user.service';
 
 export default function WithdrawScreen() {
   const router = useRouter();
@@ -18,27 +20,35 @@ export default function WithdrawScreen() {
   const theme = colorScheme === 'dark' ? Colors.dark : Colors.light;
   const dispatch = useAppDispatch();
 
-  const [walletBalance, setWalletBalance] = useState(0);
+  const { balance: walletBalance } = useAppSelector((state) => state.wallet);
   const [amount, setAmount] = useState('');
+  const [bankAccount, setBankAccount] = useState<any>(null);
   const [loading, setLoading] = useState(false);
-  const [fetching, setFetching] = useState(true);
+  const [fetching, setFetching] = useState(true); 
 
   const PROCESSING_FEE = 20;
 
   // Fetch wallet balance
   useEffect(() => {
-    const fetchWallet = async () => {
+    const initWithdraw = async () => {
       try {
-        const res = await api.get('/wallets');
-        setWalletBalance(res.data?.data?.balance || 0);
+        // Fetch fresh balance and user's saved banks
+        const [_, banks] = await Promise.all([
+          dispatch(fetchWalletData()),
+          UserService.getBanks()
+        ]);
+        if (banks && banks.length > 0) {
+          setBankAccount(banks.find((b: any) => b.isDefault) || banks[0]);
+        }
       } catch (e) {
-        setWalletBalance(245000); // Fallback mock
+        console.error(e);
       } finally {
         setFetching(false);
       }
     };
-    fetchWallet();
+    initWithdraw();
   }, []);
+
 
   const formatCurrency = (val: number) => {
     return new Intl.NumberFormat('en-NG').format(val);
@@ -50,26 +60,37 @@ export default function WithdrawScreen() {
   };
 
   const handleWithdraw = async () => {
-    const numericAmount = Number(amount.replace(/,/g, ''));
+    const numericAmount = Number(amount);
+    
+    if (!bankAccount) {
+      Alert.alert("Error", "Please add a bank account in Profile > Banks first.");
+      return;
+    }
     if (numericAmount < 500) {
       Alert.alert("Invalid Amount", "Minimum withdrawal is ₦500");
       return;
     }
+    if (numericAmount + PROCESSING_FEE > walletBalance) {
+      Alert.alert("Insufficient Funds", "You don't have enough balance to cover the amount and fee.");
+      return;
+    }
 
     setLoading(true);
-
     try {
-      const response = await api.post('/wallets/withdraw', { /* data */ });
-    
-
-    dispatch(fetchWalletData());
-
-      // Route to confirmation screen with the transaction data
-      router.replace({
-        pathname: '/sub/wallet/confirm-withdraw',
-        params: { data: JSON.stringify(response.data.data) }
+      // Call real backend
+      const res = await WalletService.withdraw({
+        amount: numericAmount,
+        accountNumber: bankAccount.accountNumber,
+        bankCode: bankAccount.bankCode,
+        accountName: bankAccount.accountName
       });
 
+      await dispatch(fetchWalletData());
+
+      router.replace({
+        pathname: '/sub/wallet/confirm-withdraw',
+        params: { data: JSON.stringify(res) }
+      });
     } catch (error: any) {
       Alert.alert("Error", error.response?.data?.message || "Failed to process withdrawal.");
     } finally {
@@ -77,7 +98,12 @@ export default function WithdrawScreen() {
     }
   };
 
-  const amountToReceive = Number(amount) > 0 ? Number(amount) - PROCESSING_FEE : 0;
+  const amountToReceive = Number(amount) > 0 ? Number(amount) : 0;
+
+  const maskAccountNumber = (num: string) => {
+    if (!num) return '';
+    return `${num.slice(0, 3)} **** ${num.slice(-3)}`;
+  };
 
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }]}>
@@ -90,10 +116,14 @@ export default function WithdrawScreen() {
             <Text style={[styles.headerTitle, { color: theme.text, marginLeft: 16 }]}>Withdraw Funds</Text>
           </TouchableOpacity>
           <View style={styles.headerRight}>
+            <TouchableOpacity onPress={() => router.push('/sub/notification')}>
             <Feather name="bell" size={20} color={theme.textSecondary} style={{ marginRight: 16 }} />
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => router.push('/(tabs)/profile')}>
             <View style={[styles.avatarPlaceholder, { backgroundColor: theme.inputBg }]}>
               <Feather name="user" size={16} color={theme.primary} />
             </View>
+            </TouchableOpacity>
           </View>
         </View>
 
@@ -108,7 +138,7 @@ export default function WithdrawScreen() {
             <View style={styles.cardDetails}>
               <Text style={[styles.cardTitle, { color: theme.text }]}>QS Wallet</Text>
               <Text style={[styles.cardSubtitle, { color: theme.textSecondary }]}>
-                Balance: ₦{fetching ? '...' : formatCurrency(walletBalance)}
+                Balance: ₦{walletBalance.toLocaleString()}
               </Text>
             </View>
             <Feather name="chevron-right" size={20} color={theme.textSecondary} />
@@ -136,16 +166,36 @@ export default function WithdrawScreen() {
 
           {/* DESTINATION SECTION */}
           <Text style={[styles.sectionLabel, { color: theme.textSecondary, marginTop: 32 }]}>DESTINATION</Text>
-          <View style={[styles.card, { backgroundColor: theme.inputBg }]}>
+          <TouchableOpacity 
+            style={[styles.card, { backgroundColor: theme.inputBg }]}
+            onPress={() => router.push('/sub/profile/banks')}
+          >
             <View style={[styles.bankIconBg, { backgroundColor: theme.background }]}>
-              <MaterialCommunityIcons name="bank" size={16} color={theme.text} />
+              <MaterialCommunityIcons name="bank" size={16} color={theme.primary} />
             </View>
+            
             <View style={styles.cardDetails}>
-              <Text style={[styles.cardTitle, { color: theme.text }]}>Access Bank</Text>
-              <Text style={[styles.cardSubtitle, { color: theme.textSecondary }]}>0012 **** 890</Text>
+              {fetching ? (
+                <ActivityIndicator size="small" color={theme.primary} style={{ alignSelf: 'flex-start' }} />
+              ) : bankAccount ? (
+                <>
+                  <Text style={[styles.cardTitle, { color: theme.text }]}>
+                    {bankAccount.bankName}
+                  </Text>
+                  <Text style={[styles.cardSubtitle, { color: theme.textSecondary }]}>
+                    {maskAccountNumber(bankAccount.accountNumber)} • {bankAccount.accountName}
+                  </Text>
+                </>
+              ) : (
+                <>
+                  <Text style={[styles.cardTitle, { color: '#FF3B30' }]}>No Bank Account Found</Text>
+                  <Text style={[styles.cardSubtitle, { color: theme.textSecondary }]}>Tap to add an account</Text>
+                </>
+              )}
             </View>
-            <Feather name="chevron-down" size={20} color={theme.textSecondary} />
-          </View>
+            
+            <Feather name="chevron-right" size={20} color={theme.textSecondary} />
+          </TouchableOpacity>
 
           {/* SUMMARY CARD */}
           <View style={[styles.summaryCard, { backgroundColor: theme.inputBg }]}>

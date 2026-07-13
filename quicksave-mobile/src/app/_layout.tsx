@@ -14,6 +14,13 @@ import { setNetworkState } from '../store/slices/networkSlice';
 import OfflineBanner from '../components/ui/offline-banner';
 import { syncOfflineData } from '../store/slices/offlineQueueSlice';
 import { socketService } from '@/api/services/socket.service';
+import NewMemberToast from '@/components/ui/newmember-toast'; 
+import PayoutToast from '@/components/ui/payout-toast';
+import { usePushNotifications } from '@/hooks/use-push-notification';
+import FabricIndicator from '@/components/ui/fabric-indicator';
+import AppLockOverlay from '@/components/ui/applock-overlay';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+
 
 // Prevent the splash screen from auto-hiding
 SplashScreen.preventAutoHideAsync();
@@ -49,9 +56,14 @@ if (isAuthenticated) {
     
   }, [isAuthenticated, dispatch]);
 
+  usePushNotifications();
   return (
     <>
+      <AppLockOverlay />
       <OfflineBanner /> 
+      <PayoutToast />
+      <NewMemberToast />
+      <FabricIndicator />
       {children}
     </>
   );
@@ -65,7 +77,7 @@ function RootNavigator() {
   const theme = colorScheme === 'dark' ? Colors.dark : Colors.light;
 
   // Redux state
-  const { isAuthenticated, isLoading } = useSelector((state: RootState) => state.auth);
+  const { isAuthenticated, isBooting } = useSelector((state: RootState) => state.auth);
   const [isFirstTime, setIsFirstTime] = useState<boolean | null>(null);
 
   // 1. Kick off the session restore when the app opens
@@ -73,7 +85,7 @@ function RootNavigator() {
     dispatch(restoreSession());
     const checkOnboarding = async () => {
       const hasSeen = await SecureStore.getItemAsync('hasSeenOnboarding');
-      setIsFirstTime(hasSeen === null); // If null, they are a first-time user
+      setIsFirstTime(hasSeen !== null); // If null, they are a first-time user
     };
     checkOnboarding();
   }, [dispatch]);
@@ -82,10 +94,10 @@ function RootNavigator() {
 
   useEffect(() => {
     // Wait until both Auth and Onboarding checks are done
-    if (isLoading || isFirstTime === null) return;
+    if (isBooting || isFirstTime === null) return;
 
     const inAuthGroup = segments[0] === 'auth';
-    const isRoot = segments.length === 0 || segments[0] === undefined;
+    const isRoot = segments.length === 0 || segments[0] === undefined || segments[0] === '';
 
     // Hide Splash Screen
     SplashScreen.hideAsync();
@@ -107,10 +119,10 @@ function RootNavigator() {
         }
       }
     }
-  }, [isAuthenticated, isLoading, isFirstTime, segments]);
+  }, [isAuthenticated, isBooting, isFirstTime, segments]);
 
   // Return null or a blank view while loading so we don't flash the wrong screen
-  if (isLoading) return null;
+  // if (isLoading) return null;
 
   return (
     <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: theme.background } }}>
@@ -119,7 +131,7 @@ function RootNavigator() {
       <Stack.Screen name="auth/register" />
       <Stack.Screen name="auth/verify" />
       <Stack.Screen name="auth/biometrics" />
-      <Stack.Screen name="(tabs)" />
+      <Stack.Screen name="(tabs)" options={{ navigationBarHidden: true }} />
       <Stack.Screen name="sub"/>
     </Stack>
   );
@@ -128,6 +140,7 @@ function RootNavigator() {
 // Wrap the Navigator in the Provider
 export default function RootLayout() {
   return (
+    <GestureHandlerRootView style={{ flex: 1 }}>
     <Provider store={store}>
       <PersistGate loading={null} persistor={persistor}>
         <NetworkAndUIWrapper>
@@ -135,5 +148,6 @@ export default function RootLayout() {
         </NetworkAndUIWrapper>
       </PersistGate>
     </Provider>
+     </GestureHandlerRootView>
   );
 }

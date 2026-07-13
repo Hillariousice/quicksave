@@ -2,6 +2,7 @@
 import { TransactionType } from '@prisma/client';
 import prisma from '../config/database';
 import { AppError } from '../utils/AppError';
+import { getIo } from "../config/socket";
 
 export const walletService = {
   // 1. Fetch wallet with safe balance
@@ -34,6 +35,7 @@ export const walletService = {
         },
       });
 
+      getIo().to(`user_${result.wallet.userId}`).emit('walletUpdated');
       return { wallet: updatedWallet, transaction };
     });
   },
@@ -65,6 +67,7 @@ export const walletService = {
         },
       });
 
+      getIo().to(`user_${result.wallet.userId}`).emit('walletUpdated');
       return { wallet: updatedWallet, transaction };
     });
   }

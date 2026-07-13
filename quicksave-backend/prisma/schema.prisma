@@ -83,7 +83,19 @@ enum InviteStatus {
   DECLINED
 }
 
+enum Currency {
+  NGN
+  USD
+  GBP
+  USDT // Crypto Stablecoin
+  BTC  
+}
 
+enum SystemRole {
+  USER
+  ADMIN
+  SUPER_ADMIN
+}
 
 model User {
   id            String      @id @default(uuid())
@@ -92,10 +104,12 @@ model User {
   firstName     String
   lastName      String
   passwordHash  String
+  bio           String?     @db.Text
   pin           String?     // hashed 4-digit transaction PIN
   avatar        String?
   status        UserStatus  @default(ACTIVE)
   refreshToken  String?
+  pushToken     String?
   isVerified    Boolean     @default(false)
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
@@ -112,6 +126,10 @@ model User {
   messages       Message[]
   sentInvites     GroupInvite[]   @relation("SentInvites")
   receivedInvites GroupInvite[]   @relation("ReceivedInvites")
+  systemRole     SystemRole  @default(USER)
+  sessions Session[]
+  supportTicket SupportTicket[]
+  
 
   @@map("users")
 }
@@ -143,8 +161,8 @@ model Group {
   rotationSlots     RotationSlot[] 
   activityLogs ActivityLog[]
   messages          Message[]  
-  invites            GroupInvite[]
-
+  invites           GroupInvite[]
+  currency          Currency @default(NGN)
   createdAt         DateTime      @default(now())
   updatedAt         DateTime      @updatedAt
 
@@ -166,6 +184,8 @@ model GroupMember {
 
   
   @@unique([userId, groupId])
+  @@index([userId, status])
+  @@index([groupId])
 }
 
 model Contribution {
@@ -174,6 +194,7 @@ model Contribution {
   groupId   String
   paidAt    DateTime?
   amount    Float 
+  currency  Currency @default(NGN)
   status    ContributionStatus @default(PENDING)
   user      User?              @relation(fields: [userId], references: [id])
   group     Group?             @relation(fields: [groupId], references: [id])
@@ -184,12 +205,15 @@ model Contribution {
 model Wallet {
   id        String   @id @default(uuid())
   balance   Float    @default(0)  
-  currency    String    @default("NGN")
+  currency  Currency @default(NGN)
   userId    String?   @unique
   groupId   String?  @unique 
   user      User?     @relation(fields: [userId], references: [id])
   group     Group?   @relation(fields: [groupId], references: [id])
   transactions Transaction[] 
+  balanceNGN Float   @default(0)
+  balanceUSD Float   @default(0)
+  balanceUSDT Float  @default(0) 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -247,6 +271,8 @@ model Transaction {
   
   createdAt       DateTime          @default(now())
   updatedAt       DateTime          @updatedAt
+
+  @@index([walletId, createdAt(sort: Desc)])
 }
 
 model GroupInvite {
@@ -294,4 +320,51 @@ model Message {
 
   @@index([groupId])
   @@index([senderId])
+}
+
+model Session {
+  id           String   @id @default(uuid())
+  userId       String
+  refreshTokens String? // Store the current refresh token hash if using one
+  userAgent    String   // Raw user agent string
+  deviceName   String   // Parsed name: "iPhone 15"
+  ipAddress    String
+  location     String   @default("Unknown")
+  lastActive   DateTime @default(now())
+  isCurrent    Boolean  @default(false) // We calculate this dynamically in the controller
+
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+
+model SupportTicket {
+  id          String   @id @default(uuid())
+  ticketId    String   @unique // e.g., #TK-1024
+  subject     String
+  category    String   // Transaction, Technical, Account
+  priority    String   // HIGH, MEDIUM, LOW
+  status      String   @default("OPEN") // OPEN, IN_PROGRESS, RESOLVED
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+
+model PlatformConfig {
+  id                    String  @id @default("GLOBAL")
+  platformName          String  @default("Quicksave")
+  primaryCurrency       String  @default("NGN - Nigerian Naira")
+  maintenanceMode       Boolean @default(false)
+  globalContributionFee Float   @default(1.5) // %
+  withdrawalFeeFlat     Float   @default(50)  // Flat NGN
+  payoutProcessingFee   Float   @default(0.5) // %
+  require2FA           Boolean  @default(true)
+  enforceStrongPasswords Boolean @default(true)
+  contributionFee      Float    @default(1.5) // Percentage
+  groupCreationFee     Float    @default(500.0) // Flat NGN
+  whitelistedIPs       Json     @default("[]")
+  updatedAt             DateTime @updatedAt
 }

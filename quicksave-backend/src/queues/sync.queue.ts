@@ -2,7 +2,7 @@ import Queue from 'bull';
 import { env } from '../config/env';
 import { logger } from '../config/logger';
 import prisma from '../config/database';
-import { groupService } from '../services/group.services';
+import { groupService } from '../services/group.service';
 
 
 export const syncQueue = new Queue('offline-sync', env.REDIS_URL, {

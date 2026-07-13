@@ -25,5 +25,18 @@ export const AuthService = {
   changePassword: async (data: any) => {
     const res = await api.put<ApiResponse>('/auth/change-password', data);
     return res.data;
+  },
+
+  forgotPassword: async (email: string) => {
+    const res = await api.post<ApiResponse>('/auth/forgot-password', { email });
+    return res.data;
+  },
+
+  resetPassword: async (data: any) => {
+    const res = await api.post<ApiResponse>('/auth/reset-password', data);
+    return res.data;
+  },
+  syncPushToken: async (token: string) => {
+    await api.patch('/users/push-token', { pushToken: token }); // Adjust to your route path
   }
 };

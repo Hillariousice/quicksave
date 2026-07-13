@@ -6,7 +6,7 @@ import { logger } from '../../config/logger';
 import crypto from 'crypto';
 import redis from '../../config/redis';
 import { AppError } from '../../utils/AppError';
-import { groupService } from '../../services/group.services';
+import { groupService } from '../../services/group.service';
 import { getIo } from '../../config/socket';
 import { payoutQueue } from '../../queues/payout.queue';
 import { syncQueue } from '../../queues/sync.queue';
@@ -60,58 +60,98 @@ export const createGroup = catchAsync(async (req: Request, res: Response) => {
 
 
 export const joinGroup = catchAsync(async (req: Request, res: Response) => {
-  // Always convert to uppercase so it matches our generator
   const inviteCode = req.body.inviteCode.toUpperCase();
   const userId = req.user.id;
 
+   const redisStart = performance.now();
   // 1. FAST LOOKUP: Check Redis for the Group ID
   let groupId = await redis.get(`invite:${inviteCode}`);
+   const redisEnd = performance.now();
 
-  // Fallback: If it expired from Redis, look it up in PostgreSQL
   if (!groupId) {
     const group = await prisma.group.findUnique({ where: { inviteCode } });
     if (!group) throw new AppError('Invalid invite code. Group not found.', 404);
     groupId = group.id;
-    // Re-cache it for next time
     await redis.setex(`invite:${inviteCode}`, 2592000, groupId);
   }
 
-  // 2. Fetch the group with its current members
-  const group = await prisma.group.findUnique({
-    where: { id: groupId },
-    include: { members: true },
+  // Move fetch, capacity check, and create INSIDE a locked transaction!
+  const { newMember, group, joiningUser } = await prisma.$transaction(async (tx) => {
+    
+    // 1. LOCK THE GROUP ROW: Concurrent join requests will pause right here and wait their turn.
+    await tx.$executeRaw`SELECT * FROM "Group" WHERE id = ${groupId} FOR UPDATE`;
+
+    // 2. Safely fetch the group with its current members
+    const safeGroup = await tx.group.findUnique({
+      where: { id: groupId },
+      include: { members: true },
+    });
+
+    if (!safeGroup) throw new AppError('Group not found.', 404);
+
+    const currentMembers = (safeGroup as any).members || [];
+    
+    // 3. ENFORCE CAPACITY (100% accurate now)
+    if (currentMembers.length >= safeGroup.maxCapacity) {
+      throw new AppError('This group has reached its maximum capacity.', 403);
+    }
+
+    // 4. PREVENT DUPLICATES
+    const isAlreadyMember = currentMembers.some((member: any) => member.userId === userId);
+    if (isAlreadyMember) {
+      throw new AppError('You are already a member of this group.', 409);
+    }
+
+    // 5. Success! Add them to the group
+    const member = await tx.groupMember.create({
+      data: {
+        userId,
+        groupId,
+        role: 'MEMBER',
+        status: 'ACTIVE',
+        joinedAt: new Date(),
+      },
+    });
+
+    // Fetch user for broadcast
+    const user = await tx.user.findUnique({
+      where: { id: userId },
+      select: { firstName: true, lastName: true, avatar: true }
+    });
+
+    // Return the data out of the transaction block
+    return { newMember: member, group: safeGroup, joiningUser: user };
+  }); // 🔓 The lock is automatically released here!
+
+  const members = await prisma.groupMember.findMany({ where: { groupId } });
+  await prisma.notification.createMany({
+  data: members.map(m => ({
+    userId: m.userId,
+    type: 'GROUP_UPDATE',
+    title: 'New Member Joined',
+    message: `${req.user.firstName} joined ${group.name}`,
+    metadata: { groupId, userName: req.user.firstName }
+  }))
+});
+  // 6. Broadcast Real-Time Events (Outside the transaction)
+  const io = getIo();
+  io.to(groupId).emit('member:joined', {
+    groupId,
+    groupName: group.name,
+    member: {
+      id: userId,
+      firstName: joiningUser?.firstName,
+      lastName: joiningUser?.lastName,
+      avatar: joiningUser?.avatar
+    }
   });
 
-  if (!group) throw new AppError('Group not found.', 404);
-
-  const currentMembers = (group as any).members || [];
-  // 3. ENFORCE CAPACITY: Check if the group is full
-  if (currentMembers.length >= group.maxCapacity) {
-    throw new AppError('This group has reached its maximum capacity.', 403);
-  }
-
-  // 4. PREVENT DUPLICATES: Check if user is already a member
-  const isAlreadyMember = currentMembers.some((member: any) => member.userId === userId);
-  if (isAlreadyMember) {
-    throw new AppError('You are already a member of this group.', 409);
-  }
-
-  // 5. Success! Add them to the group
-  const newMember = await prisma.groupMember.create({
-    data: {
-      userId,
-      groupId,
-      role: 'MEMBER',
-      status: 'ACTIVE',
-      joinedAt: new Date(),
-    },
-  });
-
-  await groupService.logAndBroadcast(groupId, 'JOINED', 'A new member joined the group!', userId);
+  await groupService.logAndBroadcast(groupId, 'JOINED', `${joiningUser?.firstName} joined the group!`, userId);
 
   logger.info({ groupId, userId }, 'User joined group via invite code');
   return sendSuccess(res, newMember, `You have successfully joined ${group.name}!`, 200);
-});
+}); 
+
 
 
 export const getGroupDetails = catchAsync(async (req: Request, res: Response) => {
@@ -249,7 +289,7 @@ export const generateRotation = catchAsync(async (req: Request, res: Response) =
     return {
       groupId: group.id,
       userId: member.userId,
-      position: index + 1, // 1st, 2nd, 3rd
+      position: index + 1, 
       expectedPayoutDate: payoutDate,
     };
   });
@@ -300,7 +340,7 @@ export const getActivityFeed = catchAsync(async (req: Request, res: Response) =>
   return sendSuccess(res, logs, 'Activity feed retrieved', 200);
 });
 
-// --- 👉 NEW: UPDATE GROUP LIFECYCLE STATUS ---
+//  UPDATE GROUP LIFECYCLE STATUS ---
 export const updateGroupStatus = catchAsync(async (req: Request, res: Response) => {
   const groupId = req.params.id as string;
   const { status } = req.body; // 'ACTIVE', 'PAUSED', 'COMPLETED'
@@ -338,19 +378,14 @@ export const makeContribution = catchAsync(async (req: Request, res: Response) =
   const groupId = req.params.id as string;
   const userId = req.user.id;
 
-  // 1. Fetch Group and User data
+  // 1. Fetch Group data (No need to lock the group just to read the amount)
   const group = await prisma.group.findUnique({
     where: { id: groupId },
     include: { members: true, wallet: true },
   });
 
-  const userWallet = await prisma.wallet.findUnique({ where: { userId } });
-  const user = await prisma.user.findUnique({ where: { id: userId } });
-
   if (!group || !group.wallet) throw new AppError('Group or Group Vault not found', 404);
-  if (!userWallet) throw new AppError('User wallet not found', 404);
 
-  // 2. Eligibility Checks
   if (group.status !== 'ACTIVE') {
     throw new AppError('You can only contribute to an ACTIVE group.', 400);
   }
@@ -361,26 +396,36 @@ export const makeContribution = catchAsync(async (req: Request, res: Response) =
   }
 
   const amountToPay = group.contributionAmount;
-
-  if (userWallet.balance < amountToPay) {
-    throw new AppError(`Insufficient funds. Please fund your wallet with at least ₦${amountToPay}`, 400);
-  }
-
-  // 3. Massive Atomic Transaction
-  // We process 6 database writes at the exact same time. If one fails, they all fail!
   const reference = `CONT_${crypto.randomBytes(6).toString('hex').toUpperCase()}`;
 
-  const contributionReceipt = await prisma.$transaction(async (tx) => {
-    // A. Deduct from User
+  // Lock the Wallet BEFORE checking the balance inside the transaction
+  const { contributionReceipt, user } = await prisma.$transaction(async (tx) => {
+    
+    // A. Find the Wallet ID
+    const userWalletBase = await tx.wallet.findUnique({ where: { userId } });
+    if (!userWalletBase) throw new AppError('User wallet not found', 404);
+
+    // B. LOCK THE USER'S WALLET ROW (Double-taps stop here!)
+    await tx.$executeRaw`SELECT * FROM "Wallet" WHERE id = ${userWalletBase.id} FOR UPDATE`;
+
+    // C. Re-read the wallet to get the absolutely latest, locked balance
+    const safeWallet = await tx.wallet.findUnique({ where: { id: userWalletBase.id } });
+
+    // D. Safe Balance Check
+    if (safeWallet!.balance < amountToPay) {
+      throw new AppError(`Insufficient funds. Please fund your wallet with at least ₦${amountToPay}`, 400);
+    }
+
+    // E. Deduct from User
     await tx.wallet.update({
-      where: { id: userWallet.id },
+      where: { id: safeWallet!.id },
       data: { balance: { decrement: amountToPay } },
     });
 
-    // B. Record User Debit
+    // F. Record User Debit
     await tx.transaction.create({
       data: {
-        walletId: userWallet.id,
+        walletId: safeWallet!.id,
         amount: amountToPay,
         type: 'CONTRIBUTION',
         status: 'SUCCESS',
@@ -389,13 +434,15 @@ export const makeContribution = catchAsync(async (req: Request, res: Response) =
       },
     });
 
-    // C. Add to Group Vault
+    // G. Add to Group Vault
     await tx.wallet.update({
       where: { id: group.wallet!.id },
       data: { balance: { increment: amountToPay } },
     });
 
-    // D. Record Group Credit
+    const txUser = await tx.user.findUnique({ where: { id: userId }});
+
+    // H. Record Group Credit
     await tx.transaction.create({
       data: {
         walletId: group.wallet!.id,
@@ -403,18 +450,18 @@ export const makeContribution = catchAsync(async (req: Request, res: Response) =
         type: 'CONTRIBUTION',
         status: 'SUCCESS',
         reference: `${reference}_CREDIT`,
-        description: `Contribution received from ${user?.firstName}`,
+        description: `Contribution received from ${txUser?.firstName}`,
       },
     });
 
-    // E. Update the Group's Total Counter
+    // I. Update the Group's Total Counter
     await tx.group.update({
       where: { id: groupId },
       data: { totalContributions: { increment: amountToPay } },
     });
 
-    // F. Create the Official Contribution Receipt
-    return await tx.contribution.create({
+    // J. Create the Official Contribution Receipt
+    const receipt = await tx.contribution.create({
       data: {
         userId,
         groupId,
@@ -423,9 +470,20 @@ export const makeContribution = catchAsync(async (req: Request, res: Response) =
         paidAt: new Date(),
       },
     });
-  });
 
-  // 4. Real-time Broadcasting! (Outside the transaction because it hits Redis/WebSockets)
+    return { contributionReceipt: receipt, user: txUser };
+  }); // 🔓 Lock is released here!
+
+  await tx.notification.create({
+  data: {
+    userId,
+    type: 'CONTRIBUTION_CONFIRMED',
+    title: 'Contribution Successful',
+    message: `Your contribution of ₦${amountToPay.toLocaleString()} was successful.`,
+    metadata: { amount: amountToPay, groupId: group.id, groupName: group.name }
+  }
+});
+  // 4. Real-time Broadcasting!
   const message = `${user?.firstName} ${user?.lastName} just contributed ₦${amountToPay}! 🎉`;
   await groupService.logAndBroadcast(groupId, 'CONTRIBUTION', message, userId);
 

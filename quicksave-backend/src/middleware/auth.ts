@@ -56,3 +56,12 @@ export const requireAuth = async (req: Request, res: Response, next: NextFunctio
     return next(new AppError('Invalid token. Please log in again.', 401));
   }
 };
+
+export const requireAdmin = (req: Request, res: Response, next: NextFunction) => {
+  // We assume requireAuth has already run, so req.user exists
+  if (req.user && (req.user.systemRole === 'ADMIN' || req.user.systemRole === 'SUPER_ADMIN')) {
+    next();
+  } else {
+    return next(new AppError('Forbidden: Admin access required', 403));
+  }
+};

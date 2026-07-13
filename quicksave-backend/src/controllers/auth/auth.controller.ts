@@ -5,8 +5,9 @@ import { catchAsync } from '../../utils/catchAsync';
 import { AppError } from '../../utils/AppError';
 import { sendSuccess } from '../../utils/response';
 import { logger } from '../../config/logger';
-import { authService } from '../../services/auth.services';
+import { authService } from '../../services/auth.service';
 import { email } from 'zod';
+import UAParser from 'ua-parser-js';
 
 export const register = catchAsync(async (req: Request, res: Response) => {
   const { email, phone, firstName, lastName, password, pin } = req.body;
@@ -87,7 +88,7 @@ export const verifyOtp = catchAsync(async (req: Request, res: Response) => {
 
 export const resendOtp = catchAsync(async (req: Request, res: Response) => {
   const { email } = req.body;
-  
+   
   const user = await prisma.user.findUnique({ where: { email } });
   if (!user) throw new AppError('User not found', 404);
   if (user.isVerified) throw new AppError('User is already verified', 400);
@@ -99,6 +100,7 @@ export const resendOtp = catchAsync(async (req: Request, res: Response) => {
 
 export const login = catchAsync(async (req: Request, res: Response) => {
   const { email, password } = req.body;
+ console.log(`Attempting login for: ${email}`);
 
   // 1. Find user
   const user = await prisma.user.findUnique({ where: { email } });
@@ -113,9 +115,30 @@ export const login = catchAsync(async (req: Request, res: Response) => {
 
   // 3. Check password
   const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
+
+  console.log("Input Password:", password);
+  console.log("Hash in DB:", user.passwordHash);
+  console.log("Is Match:", isPasswordValid);
+
   if (!isPasswordValid) {
     throw new AppError('Invalid email or password', 401);
   }
+  
+  const ua = UAParser(req.headers['user-agent']);
+  const deviceName = ua.device.model 
+    ? `${ua.device.vendor} ${ua.device.model}` 
+    : `${ua.os.name} ${ua.browser.name}`;
+
+  // Create the session in DB
+     await prisma.session.create({
+    data: {
+      userId: user.id,
+      userAgent: req.headers['user-agent'] || 'Unknown',
+      deviceName: deviceName || 'Unknown Device',
+      ipAddress: req.ip || '0.0.0.0',
+      location: 'Lagos, NG', // In production, use a GeoIP library here
+    }
+  });
 
   // 4. Generate Tokens
   const tokens = await authService.generateAuthTokens(user.id);
@@ -170,8 +193,54 @@ export const changePassword = catchAsync(async (req: Request, res: Response) => 
   return sendSuccess(res, null, 'Password updated successfully', 200);
 });
 
-// Mock 2FA Endpoint (A real app would use the 'speakeasy' library here)
+
 export const enable2FA = catchAsync(async (req: Request, res: Response) => {
   // In reality: generate a QR code secret, verify the OTP, and save it.
   return sendSuccess(res, { enabled: true }, '2FA enabled successfully', 200);
+});
+
+export const forgotPassword = catchAsync(async (req: Request, res: Response) => {
+  const { email } = req.body;
+  const user = await prisma.user.findUnique({ where: { email } });
+  
+  // Security best practice: Don't throw a 404 if the user doesn't exist to prevent email guessing.
+  // Just pretend it worked, but only actually send the email if the user exists.
+  if (user) {
+    await authService.sendPasswordResetOtp(email);
+  }
+
+  return sendSuccess(res, null, 'If an account exists, a reset code has been sent to that email.', 200);
+});
+
+export const resetPassword = catchAsync(async (req: Request, res: Response) => {
+  const { email, otp, newPassword } = req.body;
+
+  const user = await prisma.user.findUnique({ where: { email } });
+  if (!user) throw new AppError('User not found', 404);
+
+  // 1. Verify the OTP from Redis
+  await authService.verifyResetOtp(email, otp);
+
+  // 2. Hash the new password
+  const passwordHash = await bcrypt.hash(newPassword, 12);
+
+  // 3. Update the database
+  await prisma.user.update({
+    where: { email },
+    data: { passwordHash }
+  });
+
+  return sendSuccess(res, null, 'Password has been reset successfully. You can now log in.', 200);
+});
+
+
+export const sendSmsCode = catchAsync(async (req: Request, res: Response) => {
+  const { phone } = req.body;
+  const user = await prisma.user.findUnique({ where: { phone } });
+  if (!user) throw new AppError('User not found', 404);
+  if (user.isVerified) throw new AppError('User is already verified', 400);
+
+  await authService.sendOtp(phone);
+  
+  return sendSuccess(res, null, 'A new OTP has been sent', 200);
 });

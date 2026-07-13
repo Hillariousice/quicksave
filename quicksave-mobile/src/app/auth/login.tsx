@@ -10,9 +10,10 @@ import * as SecureStore from 'expo-secure-store';
 import { useDispatch } from 'react-redux';
 
 import { Colors } from '@/theme/Colors';
-import { loginUser } from '@/store/slices/authSlice';
+import { loginUser, restoreSession } from '@/store/slices/authSlice';
 import { promptBiometrics } from '@/utils/biometrics';
 import { useAppDispatch } from '@/store';
+import { SecureVault } from '@/utils/securestorage';
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -41,49 +42,58 @@ export default function LoginScreen() {
     try {
       // 1. Dispatch the Thunk and unwrap it!
       await dispatch(loginUser({ email, password })).unwrap();
+      console.log('accessToken',  await SecureVault.getAccessToken());
 
       //  2. Check Biometric preference
-     const biometricPreference = await SecureStore.getItemAsync('biometricsEnabled');
+     const biometricPreference = await SecureVault.getBiometricPreference();
     
     if (!biometricPreference) {
       router.replace('/auth/biometrics'); 
-    } else {
-      router.replace('/(tabs)'); 
-    }
+    } 
+    // else {
+    //   router.replace('/(tabs)'); 
+    // }
 
     } catch (error: any) {
       console.error('Login Error Object:', error);
       // const message = error.response?.data?.message || 'Invalid credentials. Please try again.';
       // setErrorMsg(message);
 
-       if (error.response) {
-      // Server responded with 4xx or 5xx
-      const message = error.response.data?.message || 'Invalid credentials.';
-      setErrorMsg(message);
-    } else if (error.request) {
-      // Request was made but no response received (Network Error)
-      setErrorMsg('Cannot connect to server. Check your Wi-Fi/IP.');
-    } else {
-      setErrorMsg('An unexpected error occurred.');
-    }
+       if (typeof error === 'string') {
+        setErrorMsg(error);
+      } else if (error.message) {
+        setErrorMsg(error.message);
+      } else {
+        setErrorMsg('An unexpected error occurred. Check your connection.');
+      }
+      
     } finally {
       setLoading(false);
     }
   };
 
-  const handleBiometricLogin = async () => {
-    // If you saved a token previously, you can use FaceID/Fingerprint to unlock the app instantly!
-    const success = await promptBiometrics('Unlock Quicksave');
-    if (success) {
-      const token = await SecureStore.getItemAsync('accessToken');
-      if (token) {
-        // Just bypass login if they already have a valid token stored
+ const handleBiometricLogin = async () => {
+  const success = await promptBiometrics('Unlock Quicksave');
+  if (success) {
+    const token = await SecureVault.getAccessToken();
+    if (token) {
+      setLoading(true);
+      try {
+        // Verify the token is still valid!
+        await dispatch(restoreSession()).unwrap();
         router.replace('/(tabs)');
-      } else {
-        setErrorMsg('Please log in with your password first.');
+      } catch (error) {
+        // Token expired or invalid! Force them to type their password.
+        await SecureVault.clearTokens();
+        setErrorMsg('Your session expired. Please log in with your password.');
+      } finally {
+        setLoading(false);
       }
+    } else {
+      setErrorMsg('Please log in with your password first.');
     }
-  };
+  }
+};
 
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }]}>
@@ -155,7 +165,7 @@ export default function LoginScreen() {
         </View>
 
         {/* Forgot Password */}
-        <TouchableOpacity style={styles.forgotPassword}>
+        <TouchableOpacity style={styles.forgotPassword} onPress={() => router.push('/auth/forgot-password')} >
           <Text style={[styles.forgotText, { color: theme.primary }]}>Forgot password?</Text>
         </TouchableOpacity>
 

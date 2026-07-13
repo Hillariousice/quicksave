@@ -10,17 +10,19 @@ import { useAppDispatch, useAppSelector } from '@/store';
 import { fetchMessages, receiveMessage } from '@/store/slices/chatSlice';
 import { io } from 'socket.io-client';
 import { ChatService } from '@/api/services/chat.service';
-
+import { getDayLabel } from '@/utils/date-helper';
 
 export default function SupportChatScreen() {
   const router = useRouter();
   const colorScheme = useColorScheme();
   const theme = colorScheme === 'dark' ? Colors.dark : Colors.light;
- const dispatch = useAppDispatch();
+  const dispatch = useAppDispatch();
   const user = useAppSelector(state => state.auth.user);
   const messages = useAppSelector(state => state.chat.messages);
   const [text, setText] = useState('');
-   const [isTyping, setIsTyping] = useState(false);
+  const [isTyping, setIsTyping] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isSearching, setIsSearching] = useState(false);
 
   // For support, we use a unique ID based on the user's ID or a fixed constant
   const supportRoomId = `SUPPORT_${user.id}`;
@@ -64,12 +66,30 @@ export default function SupportChatScreen() {
     await ChatService.sendMessage(supportRoomId, messageToSend);
   };
 
-  const formatTime = (date: string) => {
-    if (!date) return "";
-    const d = new Date(date);
-    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  };
+  // const formatTime = (date: string) => {
+  //   if (!date) return "";
+  //   const d = new Date(date);
+  //   return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  // };
 
+     const filteredMessages = messages.filter((m: any) => 
+      m.content?.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  
+    const renderMessages = () => {
+      let lastDate = '';
+      const items: any[] = [];
+  
+      filteredMessages.forEach((msg: any) => {
+        const dateLabel = getDayLabel(msg.createdAt);
+        if (dateLabel !== lastDate) {
+          items.push({ type: 'date_separator', label: dateLabel, id: `sep-${msg.id}` });
+          lastDate = dateLabel;
+        }
+        items.push(msg);
+      });
+      return items;
+    };
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }]}>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
@@ -80,25 +100,29 @@ export default function SupportChatScreen() {
             <FontAwesome5 name="arrow-left" size={18} color={theme.primary} />
           </TouchableOpacity>
           <View style={styles.headerTitleContainer}>
-            <Text style={[styles.headerTitle, { color: theme.primary }]} numberOfLines={1}>Ignite Wealth Support</Text>
+            <Text style={[styles.headerTitle, { color: theme.primary }]} numberOfLines={1}>Quicksave Support</Text>
             <View style={styles.activeRow}>
               <View style={styles.activeDotGreen} />
               <Text style={[styles.headerSubtitle, { color: theme.textSecondary }]}>Always active</Text>
             </View>
           </View>
-          <TouchableOpacity style={styles.headerIcon}><Feather name="more-vertical" size={20} color={theme.textSecondary} /></TouchableOpacity>
+          {/* <TouchableOpacity style={styles.headerIcon}><Feather name="more-vertical" size={20} color={theme.textSecondary} /></TouchableOpacity> */}
         </View>
 
         <ScrollView contentContainerStyle={styles.chatScroll} showsVerticalScrollIndicator={false}>
-          
-          <View style={styles.dateSeparator}>
-            <View style={[styles.dateBadge, { backgroundColor: theme.inputBg }]}>
-              <Text style={[styles.dateText, { color: theme.textSecondary }]}>TODAY</Text>
-            </View>
-          </View>
+    
 
           {/* CHAT MESSAGES */}
-         {messages.map((msg) => {
+         {renderMessages().map((msg: any) => {
+  if (msg.type === 'date_separator') {
+    return (
+      <View key={msg.id} style={styles.dateSeparator}>
+        <View style={[styles.dateBadge, { backgroundColor: theme.inputBg }]}>
+          <Text style={[styles.dateText, { color: theme.textSecondary }]}>{msg.label}</Text>
+        </View>
+      </View>
+    );
+  }
             const isSent = msg.senderId === user.id;
             return (
               <View key={msg.id} style={[styles.messageRow, isSent ? styles.messageRowSent : styles.messageRowReceived]}>

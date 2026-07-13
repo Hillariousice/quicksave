@@ -1,10 +1,10 @@
 import { Request, Response } from 'express';
 import crypto from 'crypto';
-import prisma from '../../config/database'; // or '../../config/prisma'
+import prisma from '../../config/database';
 
 import { env } from '../../config/env';
 import { logger } from '../../config/logger';
-import { walletService } from '../../services/wallet.services';
+import { walletService } from '../../services/wallet.service';
 
 export const paystackWebhook = async (req: Request, res: Response) => {
   // 1. 🚨 SECURITY: Verify the Paystack Signature
