@@ -18,9 +18,10 @@ export default function GroupAnalyticsPage() {
   const [showEditGroup, setShowEditGroup] = useState(false);
   const [formLoading, setFormLoading] = useState(false);
 
-  const fetchDetails = () => {
+const fetchDetails = () => {
+    // 👉 FIX: Added (session as any)
     fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/groups/${id}`, {
-      headers: { Authorization: `Bearer ${session?.accessToken}` }
+      headers: { Authorization: `Bearer ${(session as any)?.accessToken}` }
     })
     .then(res => res.json())
     .then(result => {
@@ -31,7 +32,8 @@ export default function GroupAnalyticsPage() {
   };
 
   useEffect(() => {
-    if (session?.accessToken) fetchDetails();
+    // 👉 FIX: Added (session as any)
+    if ((session as any)?.accessToken) fetchDetails();
   }, [id, session]);
 
    const handleAddMember = async (e: React.FormEvent) => {
@@ -40,7 +42,8 @@ export default function GroupAnalyticsPage() {
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/groups/${id}/members`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.accessToken}` },
+        // 👉 FIX: Added (session as any)
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${(session as any)?.accessToken}` },
         body: JSON.stringify({ email: memberEmail })
       });
       const result = await res.json();
@@ -60,7 +63,8 @@ export default function GroupAnalyticsPage() {
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/groups/${id}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.accessToken}` },
+        // 👉 FIX: Added (session as any)
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${(session as any)?.accessToken}` },
         body: JSON.stringify({ name: editName, status: editStatus })
       });
       if (res.ok) {
@@ -69,7 +73,6 @@ export default function GroupAnalyticsPage() {
       }
     } finally { setFormLoading(false); }
   };
-
 
   if (!data) return <div className="p-8 text-[#FF8C00] font-bold">Loading Analytics...</div>;
 
