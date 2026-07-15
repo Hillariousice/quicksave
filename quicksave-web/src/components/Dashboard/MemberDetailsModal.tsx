@@ -2,7 +2,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { X, Mail, Phone, MapPin, Calendar, AlertTriangle, Activity } from "lucide-react";
+import { X, Mail, Phone, MapPin, Calendar, AlertTriangle, Activity,AlertCircle } from "lucide-react";
 import { useSession } from "next-auth/react";
 
 export default function MemberDetailsModal({ memberId, onClose, token }: any) {
