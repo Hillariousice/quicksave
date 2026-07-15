@@ -24,7 +24,7 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-   redirect('/auth/login');
+
   return (
     <html
       lang="en"
