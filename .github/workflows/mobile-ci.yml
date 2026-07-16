@@ -1,0 +1,36 @@
+name: Mobile CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  validate-and-test:
+    name: Mobile Tests & Linting
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: ./quicksave-mobile
+
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v3
+
+      - name: ⚙️ Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20.x'
+
+      - name: 📦 Install Dependencies
+        # Using --legacy-peer-deps because of the React 19 testing library conflict we fixed!
+        run: npm ci --legacy-peer-deps
+
+      - name: 🔎 Code Quality (Lint & Typecheck)
+        # This runs the "validate" script you made in package.json (tsc --noEmit && eslint)
+        run: npm run validate
+
+      - name: 🧪 Run Jest UI & Integration Tests
+        run: npm run test

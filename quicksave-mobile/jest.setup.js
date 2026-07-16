@@ -53,3 +53,25 @@ jest.mock('react-native/Libraries/Utilities/useColorScheme', () => {
     default: jest.fn().mockReturnValue('dark'), // Default to testing dark mode
   };
 });
+
+jest.mock('expo-router', () => ({
+  useRouter: () => ({ push: jest.fn(), replace: jest.fn(), back: jest.fn() }),
+}));
+
+// We also mock useColorScheme to easily switch between Light and Dark mode in tests
+jest.mock('react-native/Libraries/Utilities/useColorScheme', () => {
+  return {
+    default: jest.fn().mockReturnValue('light'),
+  };
+});
+
+require('react-native-reanimated/lib/reanimated2/jestUtils').setUpTests();
+
+jest.mock('react-native-worklets', () => {
+  return {
+    makeShareable: jest.fn(),
+    makeMutable: jest.fn(() => ({ value: 0 })),
+  };
+});
+
+jest.mock('react-native-reanimated', () => require('react-native-reanimated/mock'));

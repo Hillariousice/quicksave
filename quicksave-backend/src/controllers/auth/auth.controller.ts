@@ -7,7 +7,7 @@ import { sendSuccess } from '../../utils/response';
 import { logger } from '../../config/logger';
 import { authService } from '../../services/auth.service';
 import { email } from 'zod';
-import UAParser from 'ua-parser-js';
+import { UAParser } from 'ua-parser-js';
 
 export const register = catchAsync(async (req: Request, res: Response) => {
   const { email, phone, firstName, lastName, password, pin } = req.body;
@@ -124,17 +124,20 @@ export const login = catchAsync(async (req: Request, res: Response) => {
     throw new AppError('Invalid email or password', 401);
   }
   
-  const ua = UAParser(req.headers['user-agent']);
+ const userAgentString = req.headers['user-agent'] as string || '';
+  const parser = new UAParser(userAgentString);
+  const ua = parser.getResult(); // MUST call getResult() to access the data!
+
   const deviceName = ua.device.model 
     ? `${ua.device.vendor} ${ua.device.model}` 
-    : `${ua.os.name} ${ua.browser.name}`;
+    : `${ua.os.name || 'Unknown OS'} ${ua.browser.name || 'Unknown Browser'}`;
 
   // Create the session in DB
      await prisma.session.create({
     data: {
       userId: user.id,
-      userAgent: req.headers['user-agent'] || 'Unknown',
-      deviceName: deviceName || 'Unknown Device',
+      userAgent: userAgentString || 'Unknown',
+      deviceName: deviceName.trim() || 'Unknown Device',
       ipAddress: req.ip || '0.0.0.0',
       location: 'Lagos, NG', // In production, use a GeoIP library here
     }

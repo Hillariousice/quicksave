@@ -1,6 +1,6 @@
 import { configureStore } from '@reduxjs/toolkit';
-import offlineQueueReducer, { syncOfflineData, enqueueContribution } from '../store/slices/offlineQueueSlice';
-import { api } from '../api/client';
+import offlineQueueReducer, { syncOfflineData, enqueueContribution } from '@/store/slices/offlineQueueSlice';
+import { api } from '@/api/client';
 import * as offlineDB from '../database/offlineQueue';
 
 // Mock the API client
