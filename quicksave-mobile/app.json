@@ -2,9 +2,9 @@
   "expo": {
     "name": "Quicksave",
     "slug": "quicksave",
-    "jsEngine": "hermes", 
+    "jsEngine": "hermes",
     "version": "1.0.0",
-    "newArchEnabled": false,
+    "newArchEnabled": true,
     "orientation": "portrait",
     "icon": "./assets/icon-app.png",
     "scheme": "quicksave",
@@ -20,8 +20,9 @@
     },
     "ios": {
       "icon": "./assets/icon-app.png",
+      "bundleIdentifier": "com.clotidestark25.quicksave",
       "infoPlist": {
-        "NSFaceIDUsageDescription": "QuickSave uses Face ID to securely unlock your vault and authorize transactions."
+        "NSFaceIDUsageDescription": "QuickSave uses Face ID to securely unlock your vault."
       }
     },
     "android": {
@@ -33,10 +34,6 @@
       },
       "predictiveBackGestureEnabled": false,
       "permissions": [
-        "USE_BIOMETRIC",
-        "USE_FINGERPRINT",
-        "android.permission.CAMERA",
-        "android.permission.RECORD_AUDIO",
         "USE_BIOMETRIC",
         "USE_FINGERPRINT",
         "android.permission.CAMERA",
@@ -74,6 +71,12 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "bedb6fe3-0bfe-41cf-afd4-472dc3759de7"
+      }
     }
   }
 }

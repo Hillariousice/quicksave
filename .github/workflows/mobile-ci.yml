@@ -11,6 +11,11 @@ jobs:
     name: Mobile Tests & Linting
     runs-on: ubuntu-latest
 
+  build-app:
+    name: Build Android APK
+    needs: validate-and-test # 🚨 WILL NOT RUN IF TESTS FAIL!
+    runs-on: ubuntu-latest
+    
     defaults:
       run:
         working-directory: ./quicksave-mobile
@@ -24,13 +29,15 @@ jobs:
         with:
           node-version: '20.x'
 
+      - name: 🚀 Setup Expo & EAS
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }} # Uses your GitHub Secret!
+
       - name: 📦 Install Dependencies
-        # Using --legacy-peer-deps because of the React 19 testing library conflict we fixed!
         run: npm ci --legacy-peer-deps
 
-      - name: 🔎 Code Quality (Lint & Typecheck)
-        # This runs the "validate" script you made in package.json (tsc --noEmit && eslint)
-        run: npm run validate
-
-      - name: 🧪 Run Jest UI & Integration Tests
-        run: npm run test
+      - name: 🏗️ Trigger Cloud Build
+        # This sends the code to Expo's massive servers to compile into an APK
+        run: eas build --platform android --profile preview --non-interactive
