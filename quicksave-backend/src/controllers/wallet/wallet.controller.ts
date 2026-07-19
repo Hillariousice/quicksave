@@ -55,7 +55,7 @@ export const withdrawFunds = catchAsync(async (req: Request, res: Response) => {
   }
 
   // 2. Deduct the funds IMMEDIATELY as PENDING so they can't double-spend it
-  const { transaction } = await prisma.$transaction(async (tx) => {
+  const { transaction } = await prisma.$transaction(async (tx: any) => {
     await tx.wallet.update({
       where: { id: wallet.id },
       data: { balance: { decrement: amount } },
@@ -111,7 +111,7 @@ export const getMyTransactions = catchAsync(async (req: Request, res: Response) 
 
 
 export const getTransactionDetails = catchAsync(async (req: Request, res: Response) => {
-  const { id } = req.params;
+  const  id  = req.params.id as unknown as string;
   const userId = req.user.id;
 
   const transaction = await prisma.transaction.findUnique({
@@ -123,7 +123,7 @@ export const getTransactionDetails = catchAsync(async (req: Request, res: Respon
     }
   });
 
-  if (!transaction || transaction.wallet.userId !== userId) {
+  if (!transaction || transaction.wallet!.userId !== userId) {
     throw new AppError('Transaction not found', 404);
   }
 

@@ -4,7 +4,8 @@ import app from '../../app';
 import prisma from '../../config/database'; 
 import { env } from '../../config/env';
 import jwt from 'jsonwebtoken';
-import { payoutService } from '../../modules/group/payout.service';
+import { payoutService } from '../../services/payout.service';
+
 
 describe('App Lifecycle & Middleware Seams', () => {
   let adminToken: string;

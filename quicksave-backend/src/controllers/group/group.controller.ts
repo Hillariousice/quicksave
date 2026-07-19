@@ -474,7 +474,7 @@ export const makeContribution = catchAsync(async (req: Request, res: Response) =
     return { contributionReceipt: receipt, user: txUser };
   }); // 🔓 Lock is released here!
 
-  await tx.notification.create({
+   await prisma.notification.create({
   data: {
     userId,
     type: 'CONTRIBUTION_CONFIRMED',
@@ -614,7 +614,7 @@ export const getMyGroups = catchAsync(async (req: Request, res: Response) => {
       progress: progress,
       nextPayoutDate: group.nextPayoutDate || group.startDate,
       // Pass the 3 avatars for the UI
-      avatars: group.members.map(m => m.user.avatar || 'https://i.pravatar.cc/150?img=11') 
+      avatars: group.members.map((m: any) => m.user.avatar || 'https://i.pravatar.cc/150?img=11') 
     };
   });
 
@@ -630,7 +630,7 @@ export const syncOfflineContributions = catchAsync(async (req: Request, res: Res
   }
 
   // Toss them all into the Bull Queue for safe, background processing
-  const jobs = contributions.map((c) => ({
+  const jobs = contributions.map((c: any) => ({
     name: 'process-sync',
     data: { userId, groupId: c.groupId, amount: c.amount, offlineId: c.id } // c.id is the SQLite UUID
   }));

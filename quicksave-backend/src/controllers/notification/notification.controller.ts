@@ -14,7 +14,7 @@ export const getNotifications = catchAsync(async (req: Request, res: Response) =
 });
 
 export const markRead = catchAsync(async (req: Request, res: Response) => {
-  const { id } = req.params;
+  const  id  = req.params.id as unknown as string;
   await prisma.notification.update({
     where: { id, userId: req.user.id },
     data: { isRead: true }

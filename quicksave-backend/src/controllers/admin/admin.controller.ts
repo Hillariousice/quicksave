@@ -4,7 +4,7 @@ import { catchAsync } from '../../utils/catchAsync';
 import { sendSuccess } from '../../utils/response';
 import { timeAgoTwo } from '../../utils/time'
 import { AppError } from '../../utils/AppError';
-
+import bcrypt from 'bcryptjs';
 
 export const getDashboardStats = catchAsync(async (req: Request, res: Response) => {
   const { range } = req.query; // '7', '30', '90', '365'
@@ -55,7 +55,7 @@ export const getDashboardStats = catchAsync(async (req: Request, res: Response) 
       { name: 'WEEK 4', contributions: 2780, payouts: 3908 },
     ],
     // ... recentGroups and recentMembers mapping stays the same as before
-    recentTransactions: recentTransactions.map(tx => ({
+    recentTransactions: recentTransactions.map((tx: any)=> ({
       id: tx.id,
       member: tx.wallet?.user ? `${tx.wallet.user.firstName} ${tx.wallet.user.lastName}` : 'System',
       type: tx.type,
@@ -75,7 +75,7 @@ export const getAllGroupsAdmin = catchAsync(async (req: Request, res: Response) 
     orderBy: { createdAt: 'desc' }
   });
 
-  const formattedGroups = groups.map(g => ({
+  const formattedGroups = groups.map((g: any) => ({
     id: g.id,
     name: g.name,
     initial: g.name.charAt(0).toUpperCase(),
@@ -91,7 +91,7 @@ export const getAllGroupsAdmin = catchAsync(async (req: Request, res: Response) 
 
 
 export const getGroupAnalyticsAdmin = catchAsync(async (req: Request, res: Response) => {
-  const { id } = req.params as unknown as string;
+  const id  = req.params.id as unknown as string;
 
   const group = await prisma.group.findUnique({
     where: { id },
@@ -123,14 +123,14 @@ export const getGroupAnalyticsAdmin = catchAsync(async (req: Request, res: Respo
       cycleAmount: group.contributionAmount,
       nextPayout: group.nextPayoutDate ? group.nextPayoutDate.toISOString().split('T')[0] : 'N/A',
     },
-    rotation: group.rotationSlots.map(slot => ({
+    rotation: group.rotationSlots.map((slot: any) => ({
       pos: slot.position,
       name: `${slot.user.firstName} ${slot.user.lastName.charAt(0)}.`,
       status: slot.status
     })),
     // For the matrix, we'll map real contributions in production. 
     // Here is the structure the UI expects:
-    matrix: group.members.map(m => ({
+    matrix: group.members.map((m: any) => ({
       name: `${m.user.firstName} ${m.user.lastName.charAt(0)}.`,
       cycles: [true, true, true, false, null] // true=paid, false=missed, null=pending
     }))
@@ -183,7 +183,7 @@ export const getAllMembersAdmin = catchAsync(async (req: Request, res: Response)
 
 
 export const getMemberDetailsAdmin = catchAsync(async (req: Request, res: Response) => {
-  const { id } = req.params as unknown as string;
+  const id  = req.params.id as unknown as string;
 
   const user = await prisma.user.findUnique({
     where: { id },
@@ -233,7 +233,7 @@ export const createMemberAdmin = catchAsync(async (req: Request, res: Response) 
 
 
 export const promoteMemberToAdmin = catchAsync(async (req: Request, res: Response) => {
-  const { id } = req.params as unknown as string;
+  const id  = req.params.id as unknown as string;
 
   // 1. Check if user exists
   const user = await prisma.user.findUnique({ where: { id } });
@@ -255,7 +255,7 @@ export const promoteMemberToAdmin = catchAsync(async (req: Request, res: Respons
 
 
 export const addMemberToGroupAdmin = catchAsync(async (req: Request, res: Response) => {
-  const { id: groupId } = req.params as unknown as string;
+  const groupId  = req.params.id as unknown as string;
   const { email } = req.body;
 
   // Find user by email
@@ -287,7 +287,7 @@ export const addMemberToGroupAdmin = catchAsync(async (req: Request, res: Respon
 
 
 export const updateGroupAdmin = catchAsync(async (req: Request, res: Response) => {
-  const { id } = req.params as unknown as string;
+  const id  = req.params.id as unknown as string;
   const { name, status } = req.body; // Restricted fields
 
   const updatedGroup = await prisma.group.update({
@@ -309,7 +309,7 @@ export const getAdminTransactions = catchAsync(async (req: Request, res: Respons
     take: 100 // Add pagination in production
   });
 
-  const formattedTx = transactions.map(tx => ({
+  const formattedTx = transactions.map((tx: any)=> ({
     id: tx.id,
     reference: tx.reference,
     user: tx.wallet?.user ? `${tx.wallet.user.firstName} ${tx.wallet.user.lastName}` : 'System',
@@ -389,14 +389,14 @@ export const getPayoutsAdmin = catchAsync(async (req: Request, res: Response) =>
       nextRotationDate: pendingRotationSlots[0]?.expectedPayoutDate || 'N/A',
       nextRotationGroups: [...new Set(pendingRotationSlots.map(s => s.groupId))].length
     },
-    pending: pendingRotationSlots.map(slot => ({
+    pending: pendingRotationSlots.map((slot: any) => ({
       id: slot.id,
       recipient: `${slot.user.firstName} ${slot.user.lastName}`,
       group: slot.group.name,
       amount: slot.group.contributionAmount * slot.group.maxCapacity,
       status: slot.status
     })),
-    recent: recentTransactions.map(tx => ({
+    recent: recentTransactions.map((tx: any) => ({
       id: tx.id,
       name: tx.wallet.user?.firstName + ' ' + tx.wallet.user?.lastName,
       group: tx.description,
@@ -434,7 +434,7 @@ export const getAllTransactionsAdmin = catchAsync(async (req: Request, res: Resp
     orderBy: { createdAt: 'desc' }
   });
 
-  const formatted = transactions.map(tx => ({
+  const formatted = transactions.map((tx: any)=> ({
     id: tx.id,
     user: `${tx.wallet.user?.firstName} ${tx.wallet.user?.lastName}`,
     email: tx.wallet.user?.email,
@@ -460,7 +460,7 @@ export const exportTransactionsAdmin = catchAsync(async (req: Request, res: Resp
   let csv = 'Reference,User,Email,Type,Amount,Status,Date\n';
 
   // Add Data Rows
-  transactions.forEach((tx) => {
+  transactions.forEach((tx: any) => {
     const userName = `${tx.wallet.user?.firstName} ${tx.wallet.user?.lastName}`;
     const date = tx.createdAt.toISOString();
     csv += `${tx.reference},${userName},${tx.wallet.user?.email},${tx.type},${tx.amount},${tx.status},${date}\n`;
@@ -493,17 +493,17 @@ export const getAllTicketsAdmin = catchAsync(async (req: Request, res: Response)
   };
 
   const [tickets, total] = await Promise.all([
-    prisma.ticket.findMany({
+    prisma.supportTicket.findMany({
       where,
       include: { user: { select: { firstName: true, lastName: true, avatar: true, email: true } } },
       orderBy: { updatedAt: 'desc' },
       skip,
       take: limit,
     }),
-    prisma.ticket.count({ where })
+    prisma.supportTicket.count({ where })
   ]);
 
-  const formatted = tickets.map(t => ({
+  const formatted = tickets.map((t: any)=> ({
     id: `#TK-${t.id.slice(0, 4).toUpperCase()}`,
     subject: t.subject,
     member: `${t.user.firstName} ${t.user.lastName}`,
@@ -525,7 +525,7 @@ export const createTicketAdmin = catchAsync(async (req: Request, res: Response) 
   const user = await prisma.user.findUnique({ where: { email: userEmail } });
   if (!user) throw new AppError('Member not found', 404);
 
-  const ticket = await prisma.ticket.create({
+  const ticket = await prisma.supportTicket.create({
     data: { subject, category, priority, status: 'OPEN', memberId: user.id }
   });
 
@@ -538,10 +538,10 @@ export const getTicketStatsAdmin = catchAsync(async (req: Request, res: Response
 
   const [openCount, resolvedToday, totalTickets] = await Promise.all([
     // 1. Count Open Tickets
-    prisma.ticket.count({ where: { status: 'OPEN' } }),
+    prisma.supportTicket.count({ where: { status: 'OPEN' } }),
     
     // 2. Count Resolved Tickets Today
-    prisma.ticket.count({ 
+    prisma.supportTicket.count({ 
       where: { 
         status: 'RESOLVED', 
         updatedAt: { gte: startOfToday } 
@@ -549,7 +549,7 @@ export const getTicketStatsAdmin = catchAsync(async (req: Request, res: Response
     }),
 
     // 3. Total tickets for capacity calculation
-    prisma.ticket.count()
+    prisma.supportTicket.count()
   ]);
 
   // Mocking average response time for now as it requires complex timestamp subtraction

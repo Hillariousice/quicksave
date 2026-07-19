@@ -54,10 +54,10 @@ syncQueue.process(async (job) => {
         data: { walletId: userWallet.id, amount, type: 'CONTRIBUTION', status: 'SUCCESS', reference: `${referenceBase}_DEBIT`, description: `Offline Sync: Contribution to ${group.name}` }
       });
       // Credit Group
-      await tx.wallet.update({ where: { id: group.wallet.id }, data: { balance: { increment: amount } } });
+      await tx.wallet.update({ where: { id: group.wallet!.id }, data: { balance: { increment: amount } } });
       // Record Group Credit
       await tx.transaction.create({
-        data: { walletId: group.wallet.id, amount, type: 'CONTRIBUTION', status: 'SUCCESS', reference: `${referenceBase}_CREDIT`, description: `Offline Sync: Received from ${user?.firstName}` }
+        data: { walletId: group.wallet!.id, amount, type: 'CONTRIBUTION', status: 'SUCCESS', reference: `${referenceBase}_CREDIT`, description: `Offline Sync: Received from ${user?.firstName}` }
       });
       // Update Group Total
       await tx.group.update({ where: { id: groupId }, data: { totalContributions: { increment: amount } } });
