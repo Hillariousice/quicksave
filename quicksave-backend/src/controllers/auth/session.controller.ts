@@ -6,7 +6,7 @@ import { timeAgo } from '../../utils/time';
 
 export const getActiveSessions = catchAsync(async (req: Request, res: Response) => {
   const userId = req.user.id as unknown as string;
-  const currentUA = req.headers['user-agent'];
+  const currentUA = req.headers['user-agent'] as string;
 
   const sessions = await prisma.session.findMany({
     where: { userId },
@@ -26,7 +26,7 @@ export const getActiveSessions = catchAsync(async (req: Request, res: Response) 
 
 export const logoutAllDevices = catchAsync(async (req: Request, res: Response) => {
   const userId = req.user.id as unknown as string;
-  const currentUA = req.headers['user-agent'];
+  const currentUA = req.headers['user-agent'] as string;
 
   // Delete all sessions EXCEPT the one currently being used
   await prisma.session.deleteMany({

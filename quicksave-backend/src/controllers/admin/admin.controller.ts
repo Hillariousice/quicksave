@@ -485,12 +485,12 @@ export const getAllTicketsAdmin = catchAsync(async (req: Request, res: Response)
     ...(status && status !== 'All' && { status: String(status) }),
     ...(q && {
       OR: [
-        { subject: { contains: String(q), mode: 'insensitive' as any } },
-        { user: { firstName: { contains: String(q), mode: 'insensitive' as any } } },
-        { id: { contains: String(q), mode: 'insensitive' as any} }
+        { subject: { contains: String(q), mode: 'insensitive' } },
+        { user: { firstName: { contains: String(q), mode: 'insensitive' } } },
+        { id: { contains: String(q), mode: 'insensitive' } }
       ]
     })
-  };
+  } as any;
 
   const [tickets, total] = await Promise.all([
     prisma.supportTicket.findMany({
