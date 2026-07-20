@@ -166,7 +166,7 @@ export const getAllMembersAdmin = catchAsync(async (req: Request, res: Response)
     orderBy: { createdAt: 'desc' }
   });
 
-  const formattedUsers = users.map(u => ({
+  const formattedUsers = users.map((u: any)=> ({
     id: u.id,
     name: `${u.firstName} ${u.lastName}`,
     email: u.email,
@@ -208,7 +208,7 @@ export const getMemberDetailsAdmin = catchAsync(async (req: Request, res: Respon
     totalSaved: user.wallet?.balance || 0,
     activeGroups: user.memberships.length,
     reliabilityScore: user._count.contributions > 10 ? 98 : 75,
-    recentActivity: user.wallet?.transactions.map(tx => ({
+    recentActivity: user.wallet?.transactions.map((tx: any) => ({
       id: tx.id,
       title: tx.type === 'CONTRIBUTION' ? 'Group Deposit' : tx.type === 'PAYOUT' ? 'Payout Received' : 'Wallet Funded',
       amount: tx.type === 'WITHDRAWAL' || tx.type === 'CONTRIBUTION' ? `-₦${tx.amount}` : `+₦${tx.amount}`,
@@ -387,7 +387,7 @@ export const getPayoutsAdmin = catchAsync(async (req: Request, res: Response) =>
       totalYtd: totalPayouts._sum.amount || 0,
       pendingCount: pendingRotationSlots.length,
       nextRotationDate: pendingRotationSlots[0]?.expectedPayoutDate || 'N/A',
-      nextRotationGroups: [...new Set(pendingRotationSlots.map(s => s.groupId))].length
+      nextRotationGroups: [...new Set(pendingRotationSlots.map((s: any) => s.groupId))].length
     },
     pending: pendingRotationSlots.map((slot: any) => ({
       id: slot.id,
@@ -485,7 +485,7 @@ export const getAllTicketsAdmin = catchAsync(async (req: Request, res: Response)
     ...(status && status !== 'All' && { status: String(status) }),
     ...(q && {
       OR: [
-        { subject: { contains: String(q), mode: 'insensitive' } },
+        { subject: { contains: String(q), mode: 'insensitive' as any } },
         { user: { firstName: { contains: String(q), mode: 'insensitive' } } },
         { id: { contains: String(q), mode: 'insensitive' } }
       ]
@@ -526,7 +526,7 @@ export const createTicketAdmin = catchAsync(async (req: Request, res: Response) 
   if (!user) throw new AppError('Member not found', 404);
 
   const ticket = await prisma.supportTicket.create({
-    data: { subject, category, priority, status: 'OPEN', memberId: user.id }
+    data: { subject, category, priority, status: 'OPEN', userId: req.user.id }
   });
 
   return sendSuccess(res, ticket, 'Ticket created', 201);

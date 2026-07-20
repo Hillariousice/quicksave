@@ -69,7 +69,7 @@ const offlineQueueSlice = createSlice({
         state.isSyncing = false;
         state.syncAttempts = 0; // Reset attempts on success!
         // Remove successfully synced items from Redux state
-        const syncedIds = action.payload.map(p => p.id);
+        const syncedIds = action.payload.map((p: any)=> p.id);
         state.pendingContributions = state.pendingContributions.filter(p => !syncedIds.includes(p.id));
       })
       .addCase(syncOfflineData.rejected, (state, action) => {

@@ -129,7 +129,7 @@ const groupSlice = createSlice({
     state.currentGroup.status = action.payload.status;
   }
   // Also update it in the activeGroups list
-  state.activeGroups = state.activeGroups.map(g => 
+  state.activeGroups = state.activeGroups.map((g: any)=> 
     g.id === action.payload.id ? { ...g, status: action.payload.status } : g
   );
 });

@@ -153,7 +153,7 @@ export default function CreateGroupScreen() {
         <View style={styles.inputGroup}>
           <Text style={[styles.label, { color: theme.textSecondary }]}>FREQUENCY</Text>
           <View style={styles.pillContainer}>
-            {['DAILY', 'WEEKLY', 'MONTHLY'].map((freq) => {
+            {['DAILY', 'WEEKLY', 'MONTHLY'].map((freq: any) => {
               const isSelected = frequency === freq;
               return (
                 <TouchableOpacity

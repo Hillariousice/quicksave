@@ -125,7 +125,7 @@ export const joinGroup = catchAsync(async (req: Request, res: Response) => {
 
   const members = await prisma.groupMember.findMany({ where: { groupId } });
   await prisma.notification.createMany({
-  data: members.map(m => ({
+  data: members.map((m: any)=> ({
     userId: m.userId,
     type: 'GROUP_UPDATE',
     title: 'New Member Joined',
@@ -529,7 +529,7 @@ export const inviteMembers = catchAsync(async (req: Request, res: Response) => {
   }
 
   // 2. Filter out users who are already in the group (or already invited)
-  const existingUserIds = group.members.map((m) => m.userId);
+  const existingUserIds = group.members.map((m: any) => m.userId);
   const newIdsToInvite = userIds.filter((id: string) => !existingUserIds.includes(id));
 
   if (newIdsToInvite.length === 0) {

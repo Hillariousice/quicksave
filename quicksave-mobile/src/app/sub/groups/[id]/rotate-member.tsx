@@ -157,7 +157,7 @@ export default function RotationTimelineScreen() {
               )}
             </View>
           ) : (
-            timeline.map((item, index) => {
+            timeline.map((item:any, index: any) => {
               const isLast = index === timeline.length - 1;
               const isPast = item.status === 'PAID';
               const isCurrent = item.status === 'PROCESSING';

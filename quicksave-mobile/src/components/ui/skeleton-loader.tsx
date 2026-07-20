@@ -16,7 +16,7 @@ export default function SkeletonLoader({ count = 5 }: { count?: number }) {
     ).start();
   }, [opacity]);
 
-  const skeletonItems = Array.from({ length: count }).map((_, index) => (
+  const skeletonItems = Array.from({ length: count }).map((_: any, index: any) => (
     <Animated.View 
       key={index} 
       style={[styles.skeletonRow, { backgroundColor: theme.inputBg, opacity }]}

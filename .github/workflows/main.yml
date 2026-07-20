@@ -1,0 +1,97 @@
+name: Quicksave App CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  # ==========================================
+  # 1. BACKEND PIPELINE
+  # ==========================================
+  backend-validation:
+    runs-on: ubuntu-latest
+    
+    # 👉 FIX: Tell GitHub that ALL 'run' commands in this job belong in the backend folder!
+    defaults:
+      run:
+        working-directory: ./quicksave-backend
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: ajo_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      
+      # 👉 FIX: Added Redis container for your Bull queues!
+      redis:
+        image: redis:7
+        ports: ["6379:6379"]
+
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+
+      - name: ⚙️ Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+
+      - name: 📦 Install Dependencies
+        run: npm ci
+
+      - name: 🔎 Check TypeScript Compilation
+        run: npx tsc --noEmit
+
+      - name: 🔐 Setup Test Environment & Database
+        # 👉 FIX: Create the .env.test file AND push the schema to the database!
+        run: |
+          echo "DATABASE_URL=postgresql://postgres:password@localhost:5432/ajo_test" >> .env.test
+          echo "DIRECT_URL=postgresql://postgres:password@localhost:5432/ajo_test" >> .env.test
+          echo "REDIS_URL=redis://localhost:6379" >> .env.test
+          echo "JWT_SECRET=super_secret_test_key_for_github" >> .env.test
+          echo "REFRESH_TOKEN_SECRET=super_secret_refresh_key" >> .env.test
+          npm run test:db:setup
+
+      - name: 🧪 Run Backend Tests & Coverage
+        run: npm run test:coverage
+
+
+  # ==========================================
+  # 2. MOBILE PIPELINE
+  # ==========================================
+  mobile-validation:
+    runs-on: ubuntu-latest
+    
+    # 👉 FIX: Tell GitHub that ALL 'run' commands in this job belong in the mobile folder!
+    defaults:
+      run:
+        working-directory: ./quicksave-mobile
+
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+
+      - name: ⚙️ Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+
+      - name: 📦 Install Mobile Deps
+        # 👉 FIX: Add legacy-peer-deps to prevent the React 19 testing library crash!
+        run: npm ci --legacy-peer-deps
+
+      - name: 🔎 Lint & Typecheck Mobile Code
+        run: npm run validate
+
+      - name: 🧪 Run Mobile Unit Tests
+        run: npm run test

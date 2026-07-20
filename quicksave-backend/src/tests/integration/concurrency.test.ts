@@ -59,7 +59,7 @@ describe('Real-Time Sockets & Race Conditions', () => {
   it('2. should prevent race conditions when 5 users join a group with 2 slots', async () => {
     // 1. Setup: Create 5 fake users
     const users = await Promise.all(
-      [1, 2, 3, 4, 5].map(n => 
+      [1, 2, 3, 4, 5].map((n: any) => 
         prisma.user.create({ data: { email: `test${n}@ajo.com`, phone: `080${n}`, firstName: 'T', lastName: 'T', passwordHash: 'hash' } })
       )
     );
@@ -76,11 +76,11 @@ describe('Real-Time Sockets & Race Conditions', () => {
     });
 
     // 3. Generate tokens for the 5 users
-    const tokens = users.map(u => jwt.sign({ id: u.id }, env.JWT_SECRET));
+    const tokens = users.map((u: any)=> jwt.sign({ id: u.id }, env.JWT_SECRET));
 
     // 4. Fire 5 requests at the EXACT SAME MILLISECOND
     const responses = await Promise.all(
-      tokens.map(token => 
+      tokens.map((token: any) => 
         request(app)
           .post('/api/v1/groups/join')
           .set('Authorization', `Bearer ${token}`)

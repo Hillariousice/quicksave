@@ -48,7 +48,7 @@ export default function TwoFactorVerifyScreen() {
 
           {/* 6-Digit OTP Input Boxes */}
           <View style={styles.otpContainer}>
-            {code.map((digit, index) => (
+            {code.map((digit: any, index: any) => (
               <TextInput
                 key={index}
                 style={[styles.otpBox, { backgroundColor: theme.inputBg, borderColor: theme.inputBorder, color: theme.text }]}

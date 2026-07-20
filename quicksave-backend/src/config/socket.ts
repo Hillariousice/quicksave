@@ -34,7 +34,7 @@ export const initSocket = (server: any) => {
         select: { groupId: true }
       });
 
-      const roomsToJoin = memberships.map(m => m.groupId);
+      const roomsToJoin = memberships.map((m: any)=> m.groupId);
       if (roomsToJoin.length > 0) {
         socket.join(roomsToJoin);
         logger.debug({ userId, roomsCount: roomsToJoin.length }, 'Auto-joined group rooms');

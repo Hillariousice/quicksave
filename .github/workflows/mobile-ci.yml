@@ -11,35 +11,25 @@ jobs:
     name: Mobile Tests & Linting
     runs-on: ubuntu-latest
 
-  build-app:
-    name: Build Android APK
-    needs: validate-and-test # 🚨 WILL NOT RUN IF TESTS FAIL!
-    runs-on: ubuntu-latest
-    
     defaults:
       run:
         working-directory: ./quicksave-mobile
 
     steps:
       - name: 📥 Checkout Code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: ⚙️ Setup Node.js
-        uses: actions/setup-node@v4 # 👉 Upgraded to v4
+        uses: actions/setup-node@v4  # 👉 Upgraded to v4
         with:
-          node-version: '22.x'
-          cache: 'npm'
-          cache-dependency-path: './quicksave-mobile/package-lock.json' # 👉 FIX: Points to mobile lockfile!
-
-      - name: 🚀 Setup Expo & EAS
-        uses: expo/expo-github-action@v8
-        with:
-          eas-version: latest
-          token: ${{ secrets.EXPO_TOKEN }} # Uses your GitHub Secret!
+          node-version: '20.x'
+          # 👉 Removed `cache: 'npm'` here too!
 
       - name: 📦 Install Dependencies
         run: npm ci --legacy-peer-deps
 
-      - name: 🏗️ Trigger Cloud Build
-        # This sends the code to Expo's massive servers to compile into an APK
-        run: eas build --platform android --profile preview --non-interactive
+      - name: 🔎 Code Quality (Lint & Typecheck)
+        run: npm run validate
+
+      - name: 🧪 Run Jest UI & Integration Tests
+        run: npm run test

@@ -97,7 +97,7 @@ export default function FullSettingsPage() {
       <div className="flex flex-col lg:flex-row gap-8">
         {/* TABS SIDEBAR */}
         <div className="w-full lg:w-64 space-y-2">
-          {["Security", "Fees", "Admin Team", "Notifications"].map(tabId => (
+          {["Security", "Fees", "Admin Team", "Notifications"].map((tabId: any) => (
             <button
               key={tabId}
               onClick={() => setActiveTab(tabId)}

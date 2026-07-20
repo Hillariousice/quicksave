@@ -128,7 +128,7 @@ export default function OnboardingScreen() {
         
         {/* Interactive Pagination Dots */}
         <View style={styles.pagination}>
-          {SLIDES.map((_, index) => (
+          {SLIDES.map((_: any, index: any) => (
             <TouchableOpacity 
               key={index} 
               onPress={() => goToSlide(index)}

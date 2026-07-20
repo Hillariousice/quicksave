@@ -216,7 +216,7 @@ const fetchTickets = useCallback(async () => {
               </tr>
             </thead>
             <tbody>
-              {Array.isArray(tickets) && tickets.length > 0 ? (tickets.map((t) => (
+              {Array.isArray(tickets) && tickets.length > 0 ? (tickets.map((t: any) => (
                 <tr key={t.id} className="border-t border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-[#1A2126] transition-colors cursor-pointer">
                   <td className="px-6 py-4">
                     <p className="font-bold text-[#FF8C00]">{t.id}</p>

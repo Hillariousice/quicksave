@@ -15,7 +15,7 @@ function TransactionGroupCard({ group, theme, formatCurrency, colorScheme }: Tra
       <Text style={[styles.sectionTitle, { color: theme.textSecondary }]}>{group.title}</Text>
       
       <View style={[styles.groupCard, { backgroundColor: theme.inputBg }]}>
-        {group.data.map((tx, index) => {
+        {group.data.map((tx: any, index: any) => {
           const isLast = index === group.data.length - 1;
           
           return (
