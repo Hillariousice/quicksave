@@ -50,7 +50,7 @@ export const getDashboardStats = catchAsync(async (req: Request, res: Response) 
     // In a real app, you would aggregate transactions by day here to build the chart
     chartData: [
       { name: 'WEEK 1', contributions: 4000, payouts: 2400 },
-      { name: 'WEEK 2', contributions: 3000, payouts: 1398 },
+      { name: 'WEEK 2', contributions: 1000, payouts: 1398 },
       { name: 'WEEK 3', contributions: 2000, payouts: 9800 },
       { name: 'WEEK 4', contributions: 2780, payouts: 3908 },
     ],

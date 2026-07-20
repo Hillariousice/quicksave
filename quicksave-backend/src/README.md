@@ -53,7 +53,7 @@ Start the development server (uses `ts-node-dev` for hot-reloading):
 \`\`\`bash
 npm run dev
 \`\`\`
-The server should now be running at `http://localhost:3000`.
+The server should now be running at `http://localhost:5000`.
 
 ---
 

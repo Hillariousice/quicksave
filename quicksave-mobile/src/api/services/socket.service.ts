@@ -15,7 +15,7 @@ class SocketService {
     const token = await SecureStore.getItemAsync('accessToken');
     
     // Extract the base URL (Remove '/api/v1' from the end of your EXPO_PUBLIC_API_URL)
-    const baseUrl = process.env.EXPO_PUBLIC_API_URL?.replace('/api/v1', '') || 'http://192.168.1.15:3000';
+    const baseUrl = process.env.EXPO_PUBLIC_API_URL?.replace('/api/v1', '') || 'http://192.168.1.15:5000';
 
     this.socket = io(baseUrl, {
       auth: { token }, // MOVE: Secure your sockets!
