@@ -33,7 +33,7 @@ export const downloadAdminReport = async (endpoint: string, token: string, filen
 export const convertToCSV = (data: any[]) => {
   if (data.length === 0) return "";
   const headers = Object.keys(data[0]).join(",");
-  const rows = data.map(obj => Object.values(obj).join(",")).join("\n");
+  const rows = data.map((obj: any)=> Object.values(obj).join(",")).join("\n");
   return `${headers}\n${rows}`;
 };
 

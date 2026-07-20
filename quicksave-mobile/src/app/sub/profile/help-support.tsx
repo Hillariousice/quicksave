@@ -71,7 +71,7 @@ export default function HelpSupportScreen() {
         </View>
 
         <View style={{ gap: 12 }}>
-          {FAQS.map(faq => (
+          {FAQS.map((faq: any) => (
             <TouchableOpacity 
               key={faq.id} 
               style={[styles.faqCard, { backgroundColor: theme.inputBg }]}

@@ -172,7 +172,7 @@ useEffect(() => {
 
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.groupsScroll}>
 
-           {activeGroups.map((group) => (
+           {activeGroups.map((group: any) => (
             <GroupCard 
               key={group.id}
               title={group.name}

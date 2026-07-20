@@ -143,7 +143,7 @@ export default function SecurityScreen() {
               {loadingSessions ? (
                 <ActivityIndicator size="small" color={theme.primary} />
               ) : (
-                sessions.map((item, index) => (
+                sessions.map((item: any, index: any) => (
                   <View key={item.id} style={[styles.sessionItem, index === 0 && { borderTopWidth: 0 }]}>
                     <MaterialCommunityIcons 
                       name={item.device.includes('iPhone') ? "cellphone" : "laptop"} 

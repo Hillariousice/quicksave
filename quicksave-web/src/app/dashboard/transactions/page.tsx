@@ -145,7 +145,7 @@ export default function TransactionsDirectoryPage() {
             <tbody>
               {loading ? (
                 <tr><td colSpan={6} className="text-center py-10 text-gray-500">Loading transactions...</td></tr>
-              ) : transactions.map((tx) => {
+              ) : transactions.map((tx: any) => {
                 const { icon: Icon, color, sign } = getTxDetails(tx.type, tx.status);
                 const txDate = new Date(tx.date);
 

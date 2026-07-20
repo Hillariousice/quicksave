@@ -139,7 +139,7 @@ export default function WalletDashboardScreen() {
         </View>
 
         <View style={styles.transactionsContainer}>
-          {transactions.map((tx, index) => {
+          {transactions.map((tx: any, index: any) => {
             const isCredit = tx.type === 'FUNDING' || tx.type === 'PAYOUT';
             const { icon, bg, color } = getTransactionIcon(tx.type);
             const amountColor = isCredit ? '#34C759' : '#FF3B30';

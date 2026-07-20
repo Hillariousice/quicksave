@@ -42,7 +42,7 @@ export default function Sidebar({ isOpen, setIsOpen }: { isOpen: boolean, setIsO
 
       {/* Main Navigation */}
       <nav className="flex-1 py-8 px-4 flex flex-col gap-2 overflow-y-auto custom-scrollbar">
-        {navItems.map((item) => {
+        {navItems.map((item: any) => {
           const isActive = pathname === item.path;
           return (
             <Link key={item.name} href={item.path}>

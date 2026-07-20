@@ -144,7 +144,7 @@ export default function GroupsDirectoryPage() {
             <tbody>
               {loading ? (
                 <tr><td colSpan={7} className="text-center py-10 text-gray-500">Loading groups...</td></tr>
-              ) : groups.map((g) => (
+              ) : groups.map((g: any) => (
                 <tr key={g.id} className="border-t border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/20 transition-colors">
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">

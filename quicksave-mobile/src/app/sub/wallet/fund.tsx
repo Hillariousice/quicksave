@@ -130,7 +130,7 @@ export default function FundWalletScreen() {
 
           {/* QUICK SELECT PILLS */}
           <View style={styles.quickSelectContainer}>
-            {QUICK_AMOUNTS.map((val) => {
+            {QUICK_AMOUNTS.map((val: any) => {
               const isSelected = Number(amount) === val;
               return (
                 <TouchableOpacity 

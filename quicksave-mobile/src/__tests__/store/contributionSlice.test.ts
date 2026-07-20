@@ -34,7 +34,7 @@ describe('Contribution Cross-Slice Synchronization', () => {
 
     // 2. ⭐️ THE CROSS-SLICE AUDIT: 
     // Did it automatically trigger the Wallet and Group refreshes?
-    const dispatchedActionTypes = dispatchSpy.mock.calls.map(call => call[0].type);
+    const dispatchedActionTypes = dispatchSpy.mock.calls.map((call: any)=> call[0].type);
     
     expect(dispatchedActionTypes).toContain('wallet/fetchData/pending');
     expect(dispatchedActionTypes).toContain('groups/fetchDetails/pending');

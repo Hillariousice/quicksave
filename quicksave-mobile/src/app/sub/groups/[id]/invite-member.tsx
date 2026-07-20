@@ -82,7 +82,7 @@ export default function InviteMembersScreen() {
     if (selectedUsers.length === 0) return;
     setLoading(true);
     try {
-      await GroupService.inviteMembers(groupId as string, selectedUsers.map(u => u.id));
+      await GroupService.inviteMembers(groupId as string, selectedUsers.map((u: any) => u.id));
       Alert.alert("Success", "Invitations sent successfully!");
       router.back();
     } catch (error: any) {
@@ -156,7 +156,7 @@ export default function InviteMembersScreen() {
           <View style={styles.selectedSection}>
             <Text style={[styles.sectionTitle, { color: theme.textSecondary }]}>SELECTED ({selectedUsers.length})</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.selectedScroll}>
-              {selectedUsers.map((user) => (
+              {selectedUsers.map((user: any) => (
                 <View key={user.id} style={styles.selectedUser}>
                   <View style={styles.selectedAvatarContainer}>
                     <Image source={{ uri: user.avatar }} style={[styles.selectedAvatar, { borderColor: theme.primary }]} />
@@ -182,7 +182,7 @@ export default function InviteMembersScreen() {
             {searchResults.length > 0 ? 'SEARCH RESULTS' : 'SEARCH FOR USERS TO INVITE'}
           </Text>
           
-          {searchResults.map((user) => {
+          {searchResults.map((user: any) => {
             const isSelected = selectedUsers.some((u) => u.id === user.id);
             return (
               <TouchableOpacity 

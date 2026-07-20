@@ -355,7 +355,7 @@ export default function GroupDetailScreen() {
           {activities.length === 0 ? (
              <Text style={{ color: theme.textSecondary, textAlign: 'center', padding: 10 }}>No activity yet. Be the first to contribute!</Text>
           ) : (
-            activities.map((activity, index) => {
+            activities.map((activity: any, index: any) => {
               const isLast = index === activities.length - 1;
               let iconName = "bell";
               let iconColor = theme.primary;
