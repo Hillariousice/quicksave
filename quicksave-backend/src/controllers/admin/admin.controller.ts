@@ -4,7 +4,7 @@ import { catchAsync } from '../../utils/catchAsync';
 import { sendSuccess } from '../../utils/response';
 import { timeAgoTwo } from '../../utils/time'
 import { AppError } from '../../utils/AppError';
-import bcrypt from 'bcryptjs';
+import bcrypt from 'bcryptjs'
 
 export const getDashboardStats = catchAsync(async (req: Request, res: Response) => {
   const { range } = req.query; // '7', '30', '90', '365'
@@ -79,7 +79,7 @@ export const getAllGroupsAdmin = catchAsync(async (req: Request, res: Response) 
     id: g.id,
     name: g.name,
     initial: g.name.charAt(0).toUpperCase(),
-    members: `${g._count.members} / ${g.maxCapacity}`,
+    members: `${g._count?.members} / ${g.maxCapacity}`,
     totalAmount: g.contributionAmount * g.maxCapacity,
     frequency: g.frequency.charAt(0) + g.frequency.slice(1).toLowerCase(),
     status: g.status,
@@ -116,21 +116,21 @@ export const getGroupAnalyticsAdmin = catchAsync(async (req: Request, res: Respo
       startDate: group.startDate ? group.startDate.toISOString().split('T')[0] : 'N/A',
       endDate: 'Dec 15, 2026', // Calculated based on cycles
       frequency: group.frequency,
-      members: group.members.length
+      members: (group as any).members? .length
     },
     stats: {
       totalPool: group.contributionAmount * group.maxCapacity,
       cycleAmount: group.contributionAmount,
       nextPayout: group.nextPayoutDate ? group.nextPayoutDate.toISOString().split('T')[0] : 'N/A',
     },
-    rotation: group.rotationSlots.map((slot: any) => ({
+    rotation: (group as any).rotationSlots.map((slot: any) => ({
       pos: slot.position,
       name: `${slot.user.firstName} ${slot.user.lastName.charAt(0)}.`,
       status: slot.status
     })),
     // For the matrix, we'll map real contributions in production. 
     // Here is the structure the UI expects:
-    matrix: group.members.map((m: any) => ({
+    matrix: (group as any).members.map((m: any) => ({
       name: `${m.user.firstName} ${m.user.lastName.charAt(0)}.`,
       cycles: [true, true, true, false, null] // true=paid, false=missed, null=pending
     }))
@@ -588,7 +588,7 @@ export const updatePlatformConfig = catchAsync(async (req: Request, res: Respons
 export const addWhitelistedIP = catchAsync(async (req: Request, res: Response) => {
   const { name, ip } = req.body;
   const config = await prisma.platformConfig.findUnique({ where: { id: 'GLOBAL' } });
-  const ips = config?.whitelistedIPs as any[] || [];
+  const ips = (config as any).whitelistedIPs as any[] || [];
   
   const updatedIps = [...ips, { name, ip, status: 'ACTIVE', id: Date.now() }];
   

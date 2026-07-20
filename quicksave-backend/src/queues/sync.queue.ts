@@ -46,7 +46,7 @@ syncQueue.process(async (job) => {
     if (userWallet.balance < amount) throw new Error('Insufficient funds for offline sync');
 
     // 3. Massive Atomic Transaction (Exactly like Day 24, but with our Idempotent Reference)
-    await prisma.$transaction(async (tx) => {
+    await prisma.$transaction(async (tx: any) => {
       // Deduct User
       await tx.wallet.update({ where: { id: userWallet.id }, data: { balance: { decrement: amount } } });
       // Record User Debit

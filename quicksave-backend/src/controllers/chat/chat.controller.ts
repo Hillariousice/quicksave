@@ -5,7 +5,7 @@ import { sendSuccess } from '../../utils/response';
 import { getIo } from '../../config/socket';
 
 export const getChatList = catchAsync(async (req: Request, res: Response) => {
-  const userId = req.user.id;
+  const userId = req.user.id as unknown as string;
 
   // Fetch groups user belongs to + the last message in each
   const groups = await prisma.group.findMany({
@@ -18,8 +18,8 @@ export const getChatList = catchAsync(async (req: Request, res: Response) => {
   const chatList = groups.map((g: any) => ({
     id: g.id,
     name: g.name,
-    text: g.messages[0]?.content || "No messages yet",
-    time: g.messages[0]?.createdAt || g.createdAt,
+    text: g.messages?.[0]?.content || "No messages yet",
+    time: g.messages?.[0]?.createdAt || g.createdAt,
     unread: 0, // Logic for unread can be added later
     isGroup: true
   }));
