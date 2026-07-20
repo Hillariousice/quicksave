@@ -11,7 +11,7 @@ describe('Comprehensive Authentication & Security Flows', () => {
     phone: '08099998888',
     firstName: 'Hillary',
     lastName: 'Test',
-    password: 'SecurePassword123!',
+    password: 'SupersecretPassword123!',
     pin: '1234',
   };
 

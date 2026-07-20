@@ -15,7 +15,7 @@ export const getChatList = catchAsync(async (req: Request, res: Response) => {
     }
   });
 
-  const chatList = groups.map(g => ({
+  const chatList = groups.map((g: any) => ({
     id: g.id,
     name: g.name,
     text: g.messages[0]?.content || "No messages yet",
@@ -28,7 +28,7 @@ export const getChatList = catchAsync(async (req: Request, res: Response) => {
 });
 
 export const getMessages = catchAsync(async (req: Request, res: Response) => {
-  const { groupId } = req.params;
+  const groupId = req.params.groupId as string; 
   const messages = await prisma.message.findMany({
     where: { groupId },
     orderBy: { createdAt: 'asc' },
@@ -58,5 +58,6 @@ export const markAllAsRead = catchAsync(async (req: Request, res: Response) => {
 
   // In a real app, you'd have a 'ReadReceipt' model or a 'readBy' array
   // For now, we simulate success
+  
   return sendSuccess(res, null, 'All messages marked as read');
 });

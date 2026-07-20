@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
-    "build": "tsc", 
+    "build": "tsc",
     "start": "npx prisma migrate deploy && node dist/server.js",
     "seed": "prisma db seed",
     "test:db:setup": "dotenv -e .env.test -- npx prisma db push",
@@ -71,7 +71,7 @@
     "@typescript-eslint/eslint-plugin": "^8.59.4",
     "@typescript-eslint/parser": "^8.59.4",
     "dotenv-cli": "^11.0.0",
-    "eslint": "^9.39.4",
+    "eslint": "^8.57.0",
     "ioredis-mock": "^8.13.1",
     "jest": "^30.4.2",
     "prisma": "^7.8.0",

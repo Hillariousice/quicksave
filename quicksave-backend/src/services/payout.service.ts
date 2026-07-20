@@ -44,14 +44,14 @@ export const payoutService = {
     await prisma.$transaction(async (tx: any) => {
       // A. Deduct from Group Vault
       await tx.wallet.update({
-        where: { id: group.wallet.id },
+        where: { id: group.wallet!.id },
         data: { balance: { decrement: expectedPayout } },
       });
 
       // B. Record Group Debit Ledger
       await tx.transaction.create({
         data: {
-          walletId: group.wallet.id,
+          walletId: group.wallet!.id,
           amount: expectedPayout,
           type: 'PAYOUT',
           status: 'SUCCESS',

@@ -15,7 +15,7 @@ export const walletService = {
   // 2. Atomic Credit Transaction
   async creditWallet(walletId: string, amount: number, reference: string, description: string, type: TransactionType) {
     // We use a Prisma $transaction so if the ledger fails to write, the balance is NOT updated!
-    return await prisma.$transaction(async (tx) => {
+    const transaction = prisma.$transaction(async (tx: any) => {
       // 1. Safely add money using "increment" (Prevents race conditions!)
       const updatedWallet = await tx.wallet.update({
         where: { id: walletId },
@@ -35,14 +35,15 @@ export const walletService = {
         },
       });
 
-      getIo().to(`user_${result.wallet.userId}`).emit('walletUpdated');
+      getIo().to(`user_${transaction.wallet!.userId}`).emit('walletUpdated');
       return { wallet: updatedWallet, transaction };
     });
+    return transaction;
   },
 
   // 3. Atomic Debit Transaction
   async debitWallet(walletId: string, amount: number, reference: string, description: string, type: TransactionType) {
-    return await prisma.$transaction(async (tx) => {
+    return await prisma.$transaction(async (tx: any) => {
       // 1. Check if they have enough money FIRST
       const wallet = await tx.wallet.findUnique({ where: { id: walletId } });
       if (!wallet || wallet.balance < amount) {
@@ -67,7 +68,7 @@ export const walletService = {
         },
       });
 
-      getIo().to(`user_${result.wallet.userId}`).emit('walletUpdated');
+      getIo().to(`user_${transaction.wallet!.userId}`).emit('walletUpdated');
       return { wallet: updatedWallet, transaction };
     });
   }

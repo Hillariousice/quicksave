@@ -361,10 +361,10 @@ model PlatformConfig {
   globalContributionFee Float   @default(1.5) // %
   withdrawalFeeFlat     Float   @default(50)  // Flat NGN
   payoutProcessingFee   Float   @default(0.5) // %
-  require2FA           Boolean  @default(true)
+  require2FA            Boolean  @default(true)
   enforceStrongPasswords Boolean @default(true)
-  contributionFee      Float    @default(1.5) // Percentage
-  groupCreationFee     Float    @default(500.0) // Flat NGN
-  whitelistedIPs       Json     @default("[]")
+  contributionFee       Float    @default(1.5) // Percentage
+  groupCreationFee      Float    @default(500.0) // Flat NGN
+  whitelistedIPs        Json     @default("[]")
   updatedAt             DateTime @updatedAt
 }
