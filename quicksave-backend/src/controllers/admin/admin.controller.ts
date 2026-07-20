@@ -116,7 +116,7 @@ export const getGroupAnalyticsAdmin = catchAsync(async (req: Request, res: Respo
       startDate: group.startDate ? group.startDate.toISOString().split('T')[0] : 'N/A',
       endDate: 'Dec 15, 2026', // Calculated based on cycles
       frequency: group.frequency,
-      members: (group as any).members? .length
+      members: (group as any).members?.length
     },
     stats: {
       totalPool: group.contributionAmount * group.maxCapacity,
