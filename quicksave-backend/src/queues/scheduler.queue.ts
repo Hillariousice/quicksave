@@ -54,7 +54,7 @@ schedulerQueue.process('send-reminders', async (job) => {
   // In a real app, you would check the Contribution table to see who hasn't paid this cycle.
   // For simplicity, we just send a gentle nudge to all members in active groups.
   for (const group of activeGroups) {
-    for (const member of group.members) {
+    for (const member of (group as any).members) {
       if (member.user.email) {
         const emailHtml = `
           <h2>Hello ${member.user.firstName},</h2>

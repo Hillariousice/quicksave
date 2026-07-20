@@ -148,8 +148,8 @@ export const getAllMembersAdmin = catchAsync(async (req: Request, res: Response)
     ...(tier && tier !== 'All Tiers' && { tier: String(tier) }),
     ...(q && {
       OR: [
-        { firstName: { contains: String(q), mode: 'insensitive' } },
-        { email: { contains: String(q), mode: 'insensitive' } }
+        { firstName: { contains: String(q), mode: 'insensitive' as any } },
+        { email: { contains: String(q), mode: 'insensitive' as any } }
       ]
     }),
     ...((startDate || endDate) && {
@@ -424,9 +424,9 @@ export const getAllTransactionsAdmin = catchAsync(async (req: Request, res: Resp
       // --- SEARCH LOGIC ---
       ...(q && {
         OR: [
-          { reference: { contains: String(q), mode: 'insensitive' } },
-          { wallet: { user: { firstName: { contains: String(q), mode: 'insensitive' } } } },
-          { wallet: { user: { lastName: { contains: String(q), mode: 'insensitive' } } } }
+          { reference: { contains: String(q), mode: 'insensitive' as any } },
+          { wallet: { user: { firstName: { contains: String(q), mode: 'insensitive' as any } } } },
+          { wallet: { user: { lastName: { contains: String(q), mode: 'insensitive' as any } } } }
         ]
       })
     },
@@ -486,8 +486,8 @@ export const getAllTicketsAdmin = catchAsync(async (req: Request, res: Response)
     ...(q && {
       OR: [
         { subject: { contains: String(q), mode: 'insensitive' as any } },
-        { user: { firstName: { contains: String(q), mode: 'insensitive' } } },
-        { id: { contains: String(q), mode: 'insensitive' } }
+        { user: { firstName: { contains: String(q), mode: 'insensitive' as any } } },
+        { id: { contains: String(q), mode: 'insensitive' as any} }
       ]
     })
   };
@@ -526,7 +526,16 @@ export const createTicketAdmin = catchAsync(async (req: Request, res: Response) 
   if (!user) throw new AppError('Member not found', 404);
 
   const ticket = await prisma.supportTicket.create({
-    data: { subject, category, priority, status: 'OPEN', userId: req.user.id }
+    data: {
+    ticketId: `TK-${Math.floor(Math.random() * 10000)}`, // Generates a random ticket ID
+    subject: req.body.subject,
+    category: req.body.category,
+    priority: req.body.priority,
+    status: 'OPEN',
+    user: {
+      connect: { id: req.user.id } // The proper relational way to connect a user!
+    }
+  }
   });
 
   return sendSuccess(res, ticket, 'Ticket created', 201);

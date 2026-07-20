@@ -95,3 +95,40 @@ jobs:
 
       - name: 🧪 Run Mobile Unit Tests
         run: npm run test
+
+        # ==========================================
+  # 3. EXPO CLOUD BUILD (Runs only if tests pass)
+  # ==========================================
+  build-app:
+    name: Build Android APK
+    needs: mobile-validation # 🚨 SENIOR DEV MOVE: WILL NOT RUN IF TESTS FAIL!
+    runs-on: ubuntu-latest
+    
+    defaults:
+      run:
+        working-directory: ./quicksave-mobile
+
+    # Only run this on the 'main' branch, not on pull requests!
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+
+      - name: ⚙️ Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+
+      - name: 🚀 Setup Expo & EAS
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }} # Uses your GitHub Secret!
+
+      - name: 📦 Install Dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: 🏗️ Trigger Cloud Build
+        # This sends the code to Expo's massive servers to compile into an APK
+        run: eas build --platform android --profile preview --non-interactive
