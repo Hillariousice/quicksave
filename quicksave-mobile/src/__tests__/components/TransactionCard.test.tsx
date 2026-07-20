@@ -15,7 +15,7 @@ describe('TransactionCard Component', () => {
         theme={Colors.light} 
         isLast={false} 
         formatCurrency={mockFormatCurrency} 
-        colorScheme="light"
+        // colorScheme="light"
       />
     );
 
@@ -37,7 +37,7 @@ describe('TransactionCard Component', () => {
         theme={Colors.light} 
         isLast={true} 
         formatCurrency={mockFormatCurrency} 
-        colorScheme="light"
+        // colorScheme="light"
       />
     );
 
