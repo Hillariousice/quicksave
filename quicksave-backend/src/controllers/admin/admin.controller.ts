@@ -172,13 +172,21 @@ export const getAllMembersAdmin = catchAsync(async (req: Request, res: Response)
     email: u.email,
     avatar: u.avatar || `https://ui-avatars.com/api/?name=${u.firstName}`,
     status: u.status,
-    tier: u._count.contributions > 10 ? 'ELITE' : 'STANDARD',
+    tier: (u._count?.contributions || 0) > 10 ? 'ELITE' : 'STANDARD',
     totalTransactions: u._count.contributions,
     balance: u.wallet?.balance || 0,
     reliabilityScore: 95,
   }));
 
-  return sendSuccess(res, { members: formattedUsers }, 'Members retrieved');
+   const stats = {
+    totalMembers: users.length,
+    verifiedStatus: users.filter(u => u.isVerified).length,
+    activeNow: users.filter(u => u.status === 'ACTIVE').length,
+    // FIX: Cast u as any here too
+    avgBalance: users.reduce((acc, u: any) => acc + (u.wallet?.balance || 0), 0) / (users.length || 1)
+  };
+
+  return sendSuccess(res, { members: formattedUsers, stats }, 'Members directory retrieved', 200);
 });
 
 
@@ -195,20 +203,21 @@ export const getMemberDetailsAdmin = catchAsync(async (req: Request, res: Respon
   });
 
   if (!user) throw new AppError('User not found', 404);
+  const u = user as any;
 
   const memberData = {
-    id: user.id,
-    name: `${user.firstName} ${user.lastName}`,
-    email: user.email,
-    phone: user.phone,
-    avatar: user.avatar || `https://i.pravatar.cc/150?u=${user.id}`,
-    tier: user._count.contributions > 10 ? 'Premium Pro Member' : 'Standard Member',
+    id: u.id,
+    name: `${u.firstName} ${u.lastName}`,
+    email: u.email,
+    phone: u.phone,
+    avatar: u.avatar || `https://i.pravatar.cc/150?u=${user.id}`,
+    tier: u._count.contributions > 10 ? 'Premium Pro Member' : 'Standard Member',
     location: 'Lagos, Nigeria', // Mock location
-    joinedDate: new Date(user.createdAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
-    totalSaved: user.wallet?.balance || 0,
-    activeGroups: user.memberships.length,
-    reliabilityScore: user._count.contributions > 10 ? 98 : 75,
-    recentActivity: user.wallet?.transactions.map((tx: any) => ({
+    joinedDate: new Date(u.createdAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
+    totalSaved: u.wallet?.balance || 0,
+    activeGroups: u.memberships.length,
+    reliabilityScore: u._count.contributions > 10 ? 98 : 75,
+    recentActivity: u.wallet?.transactions.map((tx: any) => ({
       id: tx.id,
       title: tx.type === 'CONTRIBUTION' ? 'Group Deposit' : tx.type === 'PAYOUT' ? 'Payout Received' : 'Wallet Funded',
       amount: tx.type === 'WITHDRAWAL' || tx.type === 'CONTRIBUTION' ? `-₦${tx.amount}` : `+₦${tx.amount}`,
