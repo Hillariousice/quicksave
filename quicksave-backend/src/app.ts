@@ -47,9 +47,9 @@ app.use(errorHandler);
 
 
 // Explicitly bind to '0.0.0.0' to allow external network access
-app.listen(Number(PORT), '0.0.0.0', () => {
-  console.log(`🚀 Server ready at http://192.168.1.172:${PORT}`);
-  console.log(`Local access: http://localhost:${PORT}`);
-});
+// app.listen(Number(PORT), '0.0.0.0', () => {
+//   console.log(`🚀 Server ready at http://192.168.1.172:${PORT}`);
+//   console.log(`Local access: http://localhost:${PORT}`);
+// });
 
 export default app;

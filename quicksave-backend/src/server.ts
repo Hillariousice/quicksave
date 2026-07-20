@@ -17,8 +17,8 @@ const startServer = async () => {
   
     await initScheduler();
 
-    server.listen(env.PORT, () => {
-      logger.info(`🚀 Quicksave backend is running in ${env.NODE_ENV} mode on port ${PORT}`);
+    server.listen(env.PORT, '0.0.0.0', () => {
+      logger.info(`🚀 Quicksave backend running in ${env.NODE_ENV} mode on port ${env.PORT}`);
     });
   } catch (error: any) {
     logger.error(error,'❌ Failed to start the server:');
