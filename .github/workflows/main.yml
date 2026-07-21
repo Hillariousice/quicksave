@@ -132,3 +132,27 @@ jobs:
       - name: 🏗️ Trigger Cloud Build
         # This sends the code to Expo's massive servers to compile into an APK
         run: eas build --platform android --profile preview --non-interactive
+
+  # ==========================================
+  # 3. BACKEND DEPLOYMENT (Gated by Tests)
+  # ==========================================
+  deploy-backend:
+    name: Deploy Backend to Railway
+    needs: backend-validation # 🚨 SENIOR DEV MOVE: WILL NOT RUN IF TESTS FAIL!
+    runs-on: ubuntu-latest
+    
+    # Only deploy when code is pushed or merged to the main branch
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+
+      - name: 🚂 Install Railway CLI
+        run: npm i -g @railway/cli
+
+      - name: 🚀 Deploy to Production
+        # The CLI looks at the root directory, so we pass the backend folder explicitly
+        run: railway up --service ${{ secrets.RAILWAY_SERVICE_ID }} -d
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}

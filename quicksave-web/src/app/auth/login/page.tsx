@@ -99,10 +99,10 @@ if (result?.error) {
           </div>
 
           {/* Checkbox */}
-          <div className="flex items-center">
+          {/* <div className="flex items-center">
             <input type="checkbox" className="w-4 h-4 rounded border-gray-800 bg-[#1A1A1A] text-[#FF8C00] focus:ring-[#FF8C00]" />
             <label className="ml-2 text-xs text-gray-400">Remember this device</label>
-          </div>
+          </div> */}
 
           {/* Submit Button */}
           <button

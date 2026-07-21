@@ -22,19 +22,19 @@ export default function VerifyScreen() {
   const [loading, setLoading] = useState(false);
   
   // --- TIMER STATE ---
- const { formatTime, isFinished } = useCountdown(60);
+ const { second, formatTime, isFinished, resetTimer } = useCountdown(60);
 
   const inputRefs = useRef<Array<TextInput | null>>([]);
 
 
   const handleResend = async () => {
-    if (!canResend) return;
+    if (!isFinished) return;
     
     setLoading(true);
     try {
       // Call your backend to resend the OTP
       await api.post('/auth/resend-otp', { email });
-      setTimer(60); // Reset timer
+       resetTimer(60);  // Reset timer
       setCanResend(false);
       Alert.alert("Success", "A new code has been sent to your email.");
     } catch (err: any) {
@@ -116,8 +116,8 @@ export default function VerifyScreen() {
 
             {/* --- UPDATED TIMER UI --- */}
             <View style={styles.timerContainer}>
-              <FontAwesome5 name="clock" size={14} color={timer > 0 ? theme.primary : theme.textSecondary} />
-              <Text style={[styles.timerText, { color: timer > 0 ? theme.primary : theme.textSecondary }]}>
+              <FontAwesome5 name="clock" size={14} color={isFinished > 0 ? theme.primary : theme.textSecondary} />
+              <Text style={[styles.timerText, { color: isFinished > 0 ? theme.primary : theme.textSecondary }]}>
                 {formatTime()}
               </Text>
             </View>
@@ -125,9 +125,9 @@ export default function VerifyScreen() {
             <TouchableOpacity 
               onPress={handleResend} 
               disabled={!isFinished}
-              style={[styles.resendBtn, { opacity: isFinished ? 1 : 0.5 }]}
+              style={[styles.resendBtn, { opacity: seconds ? 1 : 0.5 }]}
             >
-              <Text style={[styles.resendText, { color: isFinished ? theme.primary : theme.textSecondary }]}>
+              <Text style={[styles.resendText, { color: seconds ? theme.primary : theme.textSecondary }]}>
                 RESEND CODE
               </Text>
             </TouchableOpacity>

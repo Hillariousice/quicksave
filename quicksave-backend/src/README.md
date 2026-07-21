@@ -1,26 +1,40 @@
-# Quicksave Backend API 💰
+# 🛡️ Quicksave (Ajo) Backend API
 
-The core backend service for Quicksave, a modern group savings and wallet platform. Built to support secure contributions, automated payouts (via Paystack), and real-time notifications.
+![CI Status](https://img.shields.io/badge/build-passing-brightgreen)
+![Coverage](https://img.shields.io/badge/coverage-70%25%2B-brightgreen)
+![TypeScript](https://img.shields.io/badge/TypeScript-Strict-blue)
+![License](https://img.shields.io/badge/license-MIT-green)
 
-## 🚀 Tech Stack
-- **Runtime:** Node.js + TypeScript
-- **Framework:** Express.js
-- **Database:** PostgreSQL + Prisma ORM
-- **Caching & Queues:** Redis + Bull (for async jobs like processing payouts)
-- **Validation:** Zod (Environment, API payloads)
-- **Logging:** Pino (Structured JSON logging)
-- **Auth:** JWT (Access & Refresh tokens)
+The enterprise-grade backend powering the **Quicksave** rotating savings platform (Ajo/Esusu). Designed for high-concurrency financial transactions, real-time WebSocket updates, and robust offline-first synchronization.
 
 ---
 
-## 🛠️ Getting Started (Local Development)
+## 🏗️ Architecture & Tech Stack
+
+- **Framework:** Node.js + Express (TypeScript)
+- **Database:** PostgreSQL + Prisma ORM
+- **Cache & Queues:** Redis + Bull (Background Workers & Sockets)
+- **Real-Time:** Socket.io (Bi-directional events)
+- **Validation:** Zod (Strict schema parsing)
+- **Payments:** Paystack API & Webhooks
+- **CI/CD:** GitHub Actions -> Railway.app
+
+### 💡 Core Engineering Highlights
+1. **Atomic Financial Ledger:** Wallet debits and group credits are executed inside isolated Prisma `$transaction` blocks with `SELECT ... FOR UPDATE` Row-Level Locking, eliminating double-spend race conditions.
+2. **Offline-First Sync Engine:** Mobile clients can queue contributions via SQLite when offline. This backend processes bulk-sync payloads using **Idempotency Keys** to guarantee no user is ever charged twice for a network retry.
+3. **Socket Lifecycle Management:** Users automatically join isolated Socket.io rooms mapped to their database memberships upon JWT verification. Disconnections are gracefully handled via Redis presence sets.
+4. **Automated Scheduling:** Bull cron-jobs autonomously calculate rotation dates, process payouts, and dispatch Expo Push Notifications exactly when cycles complete.
+
+---
+
+## 🚀 Getting Started
 
 ### 1. Prerequisites
-- Node.js (v18+)
-- PostgreSQL (Running locally or via cloud like Neon/Supabase)
-- Redis (Running locally or via cloud like Upstash)
+- **Node.js** (v20+)
+- **PostgreSQL** (v15+)
+- **Redis** (v7+)
 
-### 2. Installation
+### 2. Local Setup
 Clone the repository and install dependencies:
 \`\`\`bash
 git clone https://github.com/your-username/quicksave-backend.git
@@ -28,76 +42,73 @@ cd quicksave-backend
 npm install
 \`\`\`
 
-### 3. Environment Variables
-The application uses strict environment validation. It will refuse to start if variables are missing.
-1. Copy the example environment file:
-   \`\`\`bash
-   cp .env.example .env
-   \`\`\`
-2. Update the `.env` file with your database and Redis credentials.
-
-### 4. Database Setup
-Push the Prisma schema to your PostgreSQL database and generate the TS client:
+Set up your environment variables:
 \`\`\`bash
-npx prisma db push
+cp .env.example .env
+# Edit .env with your local or cloud database credentials
+\`\`\`
+
+### 3. Database Migration
+Push the Prisma schema to your database and generate the TypeScript client:
+\`\`\`bash
+npx prisma migrate dev --name init
 npx prisma generate
 \`\`\`
 
-*(Optional)* Seed the database with dummy users, wallets, and groups:
+*(Optional) Seed the database with test users and groups:*
 \`\`\`bash
 npm run seed
 \`\`\`
 
-### 5. Running the App
-Start the development server (uses `ts-node-dev` for hot-reloading):
+### 4. Running the Server
+Start the development server (with hot-reloading):
 \`\`\`bash
 npm run dev
 \`\`\`
-The server should now be running at `http://localhost:5000`.
+The API will be available at `http://localhost:3000`.
 
 ---
 
-## 🏗️ Architecture & Core Decisions
+## 🧪 Testing
 
-### Fail-Fast Configuration
-We don't use `process.env` directly in the codebase. All environment variables are strictly validated on startup inside `src/config/env.ts` using **Zod**. If a variable is missing, the app refuses to start and logs a clear error.
+The platform enforces a strict `>70%` test coverage threshold via Jest and Supertest. The integration suite spins up a dedicated test database to perform actual database I/O and Socket concurrency checks.
 
-### Consistent API Responses
-To ensure seamless integration with the React Native frontend, all API endpoints return a standardized envelope. This is enforced via `sendSuccess` and `sendError` in `src/utils/response.ts`.
+\`\`\`bash
+# 1. Setup the test database
+npm run test:db:setup
 
-**Success:**
-\`\`\`json
-{
-  "success": true,
-  "message": "Wallet funded successfully",
-  "data": { "balance": 50000 }
-}
+# 2. Run the full test suite
+npm run test
 \`\`\`
-
-**Error:**
-\`\`\`json
-{
-  "success": false,
-  "message": "Validation failed",
-  "errors": [
-    { "field": "body.amount", "message": "Amount must be greater than 0" }
-  ]
-}
-\`\`\`
-
-### Global Error Handling & Async Wrapper
-Controllers do not use `try/catch` blocks. Instead, they are wrapped in `catchAsync`, which automatically forwards errors to our global `errorHandler` middleware. Prisma database errors (like unique constraint violations) are automatically parsed into clean `400` or `409` HTTP responses.
-
-### Structured Logging
-We use **Pino** for logging. 
-- In **development**, logs are pretty-printed and colorized via `pino-pretty`.
-- In **production**, logs are output as pure JSON, making them easily searchable in Datadog/CloudWatch by `userId`, `groupId`, or `transactionId`.
 
 ---
 
-## 📜 Available Scripts
+## 📚 API Documentation (Postman)
 
-- `npm run dev` — Starts the development server with auto-reload.
-- `npm run build` — Compiles TypeScript into JavaScript in the `/dist` folder.
-- `npm start` — Runs the compiled production code.
-- `npm run seed` — Drops current database state and populates it with faker data.
+The complete API contract—including pre-request JWT injection scripts and payload schemas—is documented via Postman.
+
+1. Import the `Quicksave-Production-API.postman_collection.json` file (located in the `/docs` folder) into your Postman workspace.
+2. Update the `baseUrl` and `token` collection variables.
+3. Fire away!
+
+---
+
+## 📁 Feature-Based Folder Structure
+This project uses Domain-Driven Design. Instead of spreading routes, controllers, and services across global folders, everything is self-contained:
+\`\`\`text
+src/
+ ├── config/          # Environment, Prisma, Redis, Socket initialization
+ ├── middleware/      # Auth guards, Zod validators, Rate limiters
+ ├── modules/         # Feature modules
+ │    ├── auth/       # Login, Register, Password Reset
+ │    ├── group/      # Group creation, Joining, Rotation Engine
+ │    ├── wallet/     # Ledgers, Withdrawals, Funding
+ │    └── webhook/    # Paystack event handlers
+ ├── queues/          # Bull background workers (Scheduler, Payouts)
+ └── tests/           # Integration and Unit tests
+\`\`\`
+
+## 🔒 Security
+- **Fail-Fast Boot:** The server refuses to boot if `env.ts` fails Zod validation.
+- **Rate Limiting:** Global API limiters + strict Authentication limiters (backed by Redis) prevent brute-force attacks.
+- **Helmet & CORS:** HTTP headers are secured, and CORS strictly whitelists the Next.js Admin console and Mobile application domains.

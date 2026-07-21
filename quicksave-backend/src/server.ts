@@ -6,7 +6,7 @@ import { initSocket } from './config/socket';
 import http from 'http';
 import { initScheduler } from './queues/scheduler.queue';
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || env.PORT || 5000;
 // Define a function to start the server
 const startServer = async () => {
   try {
@@ -17,8 +17,8 @@ const startServer = async () => {
   
     await initScheduler();
 
-    server.listen(env.PORT, '0.0.0.0', () => {
-      logger.info(`🚀 Quicksave backend running in ${env.NODE_ENV} mode on port ${env.PORT}`);
+    server.listen(PORT, () => {
+      logger.info(`🚀 Quicksave backend running in ${env.NODE_ENV} mode on port ${PORT}`);
     });
   } catch (error: any) {
     logger.error(error,'❌ Failed to start the server:');

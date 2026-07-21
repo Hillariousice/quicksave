@@ -4,7 +4,7 @@
     "slug": "quicksave",
     "jsEngine": "hermes",
     "version": "1.0.0",
-    "newArchEnabled": true,
+    "newArchEnabled": false,
     "orientation": "portrait",
     "icon": "./assets/icon-app.png",
     "scheme": "quicksave",

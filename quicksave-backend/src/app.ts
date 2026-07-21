@@ -20,8 +20,11 @@ app.use(cors({
   origin: [
     'http://localhost:3001', // Local Web
     'http://localhost:8081', // Local Mobile
-    'https://quicksave-web.vercel.app' // 👉 NEW: Production Web Dashboard!
+    'https://quicksave-red.vercel.app', // 👉 NEW: Production Web Dashboard!
+    '*'
+    
   ],
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
   credentials: true
 })); 
 app.use(express.json()); 
