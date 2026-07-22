@@ -34,7 +34,7 @@ export default function SetupSuperAdmin() {
 
       if (res.ok && result.success) {
         setSuccess(true);
-        setTimeout(() => router.push("/login"), 2000); // Redirect to login after 2s
+        setTimeout(() => router.push("/auth/login"), 2000); // Redirect to login after 2s
       } else {
         setError(result.message || "Failed to create Super Admin.");
       }
