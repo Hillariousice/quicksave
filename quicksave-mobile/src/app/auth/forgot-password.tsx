@@ -1,5 +1,15 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, TextInput, useColorScheme, ActivityIndicator, Alert } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  SafeAreaView,
+  TouchableOpacity,
+  TextInput,
+  useColorScheme,
+  ActivityIndicator,
+  Alert,
+} from 'react-native';
 import { useRouter } from 'expo-router';
 import { FontAwesome5, Feather } from '@expo/vector-icons';
 import { Colors } from '@/theme/Colors';
@@ -42,7 +52,9 @@ export default function ForgotPasswordScreen() {
         </View>
 
         <Text style={[styles.title, { color: theme.text }]}>Reset Password</Text>
-        <Text style={[styles.subtitle, { color: theme.textSecondary }]}>Enter your email address and we'll send you a 6-digit code to reset your password.</Text>
+        <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
+          Enter your email address and we'll send you a 6-digit code to reset your password.
+        </Text>
 
         <View style={[styles.inputContainer, { backgroundColor: theme.inputBg }]}>
           <Feather name="mail" size={18} color={theme.textSecondary} style={styles.inputIcon} />
@@ -59,12 +71,19 @@ export default function ForgotPasswordScreen() {
       </View>
 
       <View style={styles.footer}>
-        <TouchableOpacity 
-          style={[styles.button, { backgroundColor: theme.primary, opacity: loading || !email ? 0.7 : 1 }]}
+        <TouchableOpacity
+          style={[
+            styles.button,
+            { backgroundColor: theme.primary, opacity: loading || !email ? 0.7 : 1 },
+          ]}
           onPress={handleRequestReset}
           disabled={loading || !email}
         >
-          {loading ? <ActivityIndicator color="#111" /> : <Text style={styles.buttonText}>Send Reset Code</Text>}
+          {loading ? (
+            <ActivityIndicator color="#111" />
+          ) : (
+            <Text style={styles.buttonText}>Send Reset Code</Text>
+          )}
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -77,10 +96,28 @@ const styles = StyleSheet.create({
   backButton: { padding: 5, alignSelf: 'flex-start' },
   content: { flex: 1, paddingHorizontal: 24, paddingTop: 20 },
   iconWrapper: { alignItems: 'center', marginBottom: 24 },
-  iconGlow: { width: 80, height: 80, borderRadius: 40, justifyContent: 'center', alignItems: 'center' },
+  iconGlow: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   title: { fontSize: 24, fontWeight: 'bold', marginBottom: 12, textAlign: 'center' },
-  subtitle: { fontSize: 14, textAlign: 'center', lineHeight: 22, marginBottom: 32, paddingHorizontal: 10 },
-  inputContainer: { flexDirection: 'row', alignItems: 'center', height: 56, borderRadius: 12, paddingHorizontal: 16 },
+  subtitle: {
+    fontSize: 14,
+    textAlign: 'center',
+    lineHeight: 22,
+    marginBottom: 32,
+    paddingHorizontal: 10,
+  },
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: 56,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+  },
   inputIcon: { marginRight: 12 },
   input: { flex: 1, fontSize: 16 },
   footer: { paddingHorizontal: 24, paddingBottom: 32 },

@@ -3,7 +3,7 @@ import { Platform, useColorScheme } from 'react-native';
 import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
 import Constants from 'expo-constants';
-import { useRouter } from 'expo-router'; 
+import { useRouter } from 'expo-router';
 import { useAppSelector, useAppDispatch } from '../store';
 import { AuthService } from '@/api/services/auth.service';
 import { Colors } from '@/theme/Colors';
@@ -22,8 +22,8 @@ Notifications.setNotificationHandler({
 export function usePushNotifications() {
   const router = useRouter();
   const dispatch = useAppDispatch();
-  const { isAuthenticated } = useAppSelector(state => state.auth);
-  
+  const { isAuthenticated } = useAppSelector((state) => state.auth);
+
   const colorScheme = useColorScheme();
   const theme = colorScheme === 'dark' ? Colors.dark : Colors.light;
 
@@ -44,7 +44,7 @@ export function usePushNotifications() {
         // Deep link to the gorgeous receipt screen we built!
         router.push({
           pathname: '/sub/wallet/transaction-receipt',
-          params: { data: JSON.stringify({ ...data, type: 'Payout' }) }
+          params: { data: JSON.stringify({ ...data, type: 'Payout' }) },
         });
         break;
       case 'CONTRIBUTION_DUE':
@@ -58,7 +58,7 @@ export function usePushNotifications() {
         // Deep link to the Contribution Success screen
         router.push({
           pathname: '/sub/notification/contribution',
-          params: { data: JSON.stringify(data) }
+          params: { data: JSON.stringify(data) },
         });
         break;
       default:
@@ -79,10 +79,10 @@ export function usePushNotifications() {
 
     // --- 2. FOREGROUND LISTENER ---
     // Fires when a notification arrives WHILE the app is open
-    notificationListener.current = Notifications.addNotificationReceivedListener(notification => {
+    notificationListener.current = Notifications.addNotificationReceivedListener((notification) => {
       const data = notification.request.content.data;
       console.log('📬 Notification received in foreground:', data);
-      
+
       // If money moved, silently update the Redux wallet balance in the background!
       if (data.type === 'PAYOUT' || data.type === 'CONTRIBUTION_CONFIRMED') {
         dispatch(fetchWalletData());
@@ -91,14 +91,14 @@ export function usePushNotifications() {
 
     // --- 3. TAP LISTENER (Background / Killed State) ---
     // Fires when a user TAPS the notification banner from their lock screen
-    responseListener.current = Notifications.addNotificationResponseReceivedListener(response => {
+    responseListener.current = Notifications.addNotificationResponseReceivedListener((response) => {
       const data = response.notification.request.content.data;
       console.log('👆 Notification tapped! Payload:', data);
       handleNotificationTap(data);
     });
 
     // --- CLEANUP ---
-     return () => {
+    return () => {
       if (notificationListener.current) {
         notificationListener.current.remove();
       }
@@ -106,5 +106,5 @@ export function usePushNotifications() {
         responseListener.current.remove();
       }
     };
-  }, [isAuthenticated, dispatch, router]); 
+  }, [isAuthenticated, dispatch, router]);
 }

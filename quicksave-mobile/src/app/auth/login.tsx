@@ -1,14 +1,21 @@
 import React, { useState } from 'react';
-import { 
-  View, Text, StyleSheet, TouchableOpacity, TextInput, 
-  useColorScheme, SafeAreaView, KeyboardAvoidingView, 
-  Platform, ActivityIndicator 
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  TextInput,
+  useColorScheme,
+  SafeAreaView,
+  KeyboardAvoidingView,
+  Platform,
+  ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { FontAwesome5, Feather, MaterialIcons } from '@expo/vector-icons';
 import * as SecureStore from 'expo-secure-store';
 import { useDispatch } from 'react-redux';
-
+import { api } from '@/api/client';
 import { Colors } from '@/theme/Colors';
 import { loginUser, restoreSession } from '@/store/slices/authSlice';
 import { promptBiometrics } from '@/utils/biometrics';
@@ -18,8 +25,7 @@ import { SecureVault } from '@/utils/securestorage';
 export default function LoginScreen() {
   const router = useRouter();
 
-   const dispatch = useAppDispatch(); 
-
+  const dispatch = useAppDispatch();
 
   const colorScheme = useColorScheme();
   const theme = colorScheme === 'dark' ? Colors.dark : Colors.light;
@@ -40,68 +46,81 @@ export default function LoginScreen() {
     setLoading(true);
 
     try {
-      // 1. Dispatch the Thunk and unwrap it!
       await dispatch(loginUser({ email, password })).unwrap();
-      console.log('accessToken',  await SecureVault.getAccessToken());
+      const biometricPreference = await SecureVault.getBiometricPreference();
 
-      //  2. Check Biometric preference
-     const biometricPreference = await SecureVault.getBiometricPreference();
-    
-    if (!biometricPreference) {
-      router.replace('/auth/biometrics'); 
-    } 
-    // else {
-    //   router.replace('/(tabs)'); 
-    // }
-
+      if (!biometricPreference) {
+        router.replace('/auth/biometrics');
+      } else {
+        router.replace('/(tabs)');
+      }
     } catch (error: any) {
       console.error('Login Error Object:', error);
-      // const message = error.response?.data?.message || 'Invalid credentials. Please try again.';
-      // setErrorMsg(message);
+      const errString = typeof error === 'string' ? error : error?.message || '';
 
-       if (typeof error === 'string') {
+      //  Intercept the "Unverified" error
+      if (errString.toLowerCase().includes('verify your email')) {
+        try {
+          // Automatically fire the OTP email in the background!
+          await api.post('/auth/resend-otp', { email });
+        } catch (resendError) {
+          console.error('Failed to auto-send OTP', resendError);
+          // We silently fail the auto-send so it doesn't break the routing.
+          // They can still click "Resend" on the next screen if this failed.
+        }
+
+        setLoading(false);
+
+        // Route them to the verify screen
+        router.push({
+          pathname: '/auth/verify', // Change to '/verify' if your verify.tsx is at the root
+          params: { email },
+        });
+        return; // Stop execution here
+      }
+
+      // Handle standard errors (Wrong password, Network error, etc.)
+      if (typeof error === 'string') {
         setErrorMsg(error);
       } else if (error.message) {
         setErrorMsg(error.message);
       } else {
         setErrorMsg('An unexpected error occurred. Check your connection.');
       }
-      
     } finally {
       setLoading(false);
     }
   };
 
- const handleBiometricLogin = async () => {
-  const success = await promptBiometrics('Unlock Quicksave');
-  if (success) {
-    const token = await SecureVault.getAccessToken();
-    if (token) {
-      setLoading(true);
-      try {
-        // Verify the token is still valid!
-        await dispatch(restoreSession()).unwrap();
-        router.replace('/(tabs)');
-      } catch (error) {
-        // Token expired or invalid! Force them to type their password.
-        await SecureVault.clearTokens();
-        setErrorMsg('Your session expired. Please log in with your password.');
-      } finally {
-        setLoading(false);
+  const handleBiometricLogin = async () => {
+    const success = await promptBiometrics('Unlock Quicksave');
+    if (success) {
+      const token = await SecureVault.getAccessToken();
+      if (token) {
+        setLoading(true);
+        try {
+          // Verify the token is still valid!
+          await dispatch(restoreSession()).unwrap();
+          router.replace('/(tabs)');
+        } catch (error) {
+          // Token expired or invalid! Force them to type their password.
+          await SecureVault.clearTokens();
+          setErrorMsg('Your session expired. Please log in with your password.');
+        } finally {
+          setLoading(false);
+        }
+      } else {
+        setErrorMsg('Please log in with your password first.');
       }
-    } else {
-      setErrorMsg('Please log in with your password first.');
     }
-  }
-};
+  };
 
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }]}>
-      <KeyboardAvoidingView 
-        style={styles.container} 
+      <KeyboardAvoidingView
+        style={styles.container}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
-        
         {/* Top Branding matching your Figma */}
         <View style={styles.branding}>
           <FontAwesome5 name="shield-alt" size={18} color={theme.primary} />
@@ -149,14 +168,18 @@ export default function LoginScreen() {
               onChangeText={setPassword}
             />
             <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
-              <Feather name={showPassword ? "eye" : "eye-off"} size={18} color={theme.textSecondary} />
+              <Feather
+                name={showPassword ? 'eye' : 'eye-off'}
+                size={18}
+                color={theme.textSecondary}
+              />
             </TouchableOpacity>
           </View>
         </View>
 
         {/* Biometrics Button */}
         <View style={styles.biometricContainer}>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={[styles.biometricButton, { backgroundColor: theme.inputBg }]}
             onPress={handleBiometricLogin}
           >
@@ -165,12 +188,15 @@ export default function LoginScreen() {
         </View>
 
         {/* Forgot Password */}
-        <TouchableOpacity style={styles.forgotPassword} onPress={() => router.push('/auth/forgot-password')} >
+        <TouchableOpacity
+          style={styles.forgotPassword}
+          onPress={() => router.push('/auth/forgot-password')}
+        >
           <Text style={[styles.forgotText, { color: theme.primary }]}>Forgot password?</Text>
         </TouchableOpacity>
 
         {/* Login Button */}
-        <TouchableOpacity 
+        <TouchableOpacity
           style={[styles.button, { backgroundColor: theme.primary, opacity: loading ? 0.7 : 1 }]}
           onPress={handleLogin}
           disabled={loading}
@@ -191,7 +217,6 @@ export default function LoginScreen() {
             <Text style={[styles.footerLink, { color: theme.primary }]}>Register</Text>
           </TouchableOpacity>
         </View>
-
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -206,29 +231,40 @@ const styles = StyleSheet.create({
   title: { fontSize: 24, fontWeight: 'bold', marginBottom: 8 },
   subtitle: { fontSize: 14 },
   form: { gap: 16, marginBottom: 30 },
-  inputContainer: { 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    height: 56, 
-    borderRadius: 12, 
-    paddingHorizontal: 16 
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: 56,
+    borderRadius: 12,
+    paddingHorizontal: 16,
   },
   inputIcon: { marginRight: 12 },
   input: { flex: 1, fontSize: 16 },
   biometricContainer: { alignItems: 'center', marginBottom: 20 },
-  biometricButton: { 
-    width: 60, height: 60, borderRadius: 30, 
-    justifyContent: 'center', alignItems: 'center' 
+  biometricButton: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   forgotPassword: { alignItems: 'center', marginBottom: 30 },
   forgotText: { fontSize: 14, fontWeight: '600' },
-  button: { 
-    height: 56, borderRadius: 28, 
-    justifyContent: 'center', alignItems: 'center', 
-    marginBottom: 24 
+  button: {
+    height: 56,
+    borderRadius: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 24,
   },
   buttonText: { color: '#11181C', fontSize: 16, fontWeight: 'bold' }, // Dark text on orange button
-  footer: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: 'auto', marginBottom: 30 },
+  footer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 'auto',
+    marginBottom: 30,
+  },
   footerText: { fontSize: 14 },
   footerLink: { fontSize: 14, fontWeight: '600' },
   errorBox: { backgroundColor: '#FF3B3020', padding: 12, borderRadius: 8, marginBottom: 20 },

@@ -1,6 +1,6 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { GroupService } from '../../api/services/group.service';
-import { fetchWalletData } from './walletSlice'; 
+import { fetchWalletData } from './walletSlice';
 import { fetchGroupDetails } from './groupSlice';
 
 export const submitContribution = createAsyncThunk(
@@ -20,7 +20,7 @@ export const submitContribution = createAsyncThunk(
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.message || 'Failed to submit contribution');
     }
-  }
+  },
 );
 
 const contributionSlice = createSlice({
@@ -45,7 +45,7 @@ const contributionSlice = createSlice({
         state.isProcessingPayment = false;
         state.error = action.payload as string;
       });
-  }
+  },
 });
 
 export default contributionSlice.reducer;

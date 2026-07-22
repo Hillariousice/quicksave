@@ -1,12 +1,14 @@
 // 1. Import env first so it validates variables immediately
-import { env } from './config/env'; 
+import { env } from './config/env';
 import { logger } from './config/logger';
 import app from './app'; // Import the Express app we configured
 import { initSocket } from './config/socket';
 import http from 'http';
 import { initScheduler } from './queues/scheduler.queue';
 
-const PORT = process.env.PORT || env.PORT || 5000;
+
+
+
 // Define a function to start the server
 const startServer = async () => {
   try {
@@ -14,14 +16,18 @@ const startServer = async () => {
     const server = http.createServer(app);
 
     initSocket(server);
-  
+
     await initScheduler();
 
+    const PORT = process.env.PORT || env.PORT || 3000;
+
     server.listen(PORT, () => {
-      logger.info(`🚀 Quicksave backend running in ${env.NODE_ENV} mode on port ${PORT}`);
+      console.log(`\n✅ SERVER BOOTED SUCCESSFULLY ON PORT ${PORT}\n`);
+      logger.info(`🚀 Quicksave backend & Socket.io running on port ${PORT}`);
     });
   } catch (error: any) {
-    logger.error(error,'❌ Failed to start the server:');
+    console.error('\n❌ FATAL ERROR DURING STARTUP:\n', error);
+    logger.error(error, '❌ Failed to start the server:');
     process.exit(1);
   }
 };

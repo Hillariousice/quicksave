@@ -11,9 +11,15 @@ import userRoutes from './routes/user.router';
 import adminRoutes from './routes/admin.router';
 import { apiLimiter } from './middleware/rateLimiter';
 import { performanceTracker } from './utils/performance';
+import * as Sentry from '@sentry/node';
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 3000;
+
+Sentry.init({
+  dsn: process.env.SENTRY_DSN,
+  tracesSampleRate: 1.0,
+});
 
 app.use(helmet()); 
 app.use(cors({
@@ -28,8 +34,10 @@ app.use(cors({
   credentials: true
 })); 
 app.use(express.json()); 
+app.use(Sentry.Handlers.requestHandler());
 app.use(morgan('dev')); 
 app.use(performanceTracker);
+
 
 app.use('/api/', apiLimiter); 
 app.get('/health', (req, res) => {
@@ -46,7 +54,8 @@ app.use('/api/v1/admin', adminRoutes)
 
 
 // Global Error Handler MUST be last
-app.use(errorHandler);
+app.use(Sentry.Handlers.errorHandler());
+app.use(errorHandler); 
 
 
 // Explicitly bind to '0.0.0.0' to allow external network access

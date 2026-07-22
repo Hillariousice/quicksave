@@ -1,5 +1,15 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, TextInput, useColorScheme, ActivityIndicator, Alert } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  SafeAreaView,
+  TouchableOpacity,
+  TextInput,
+  useColorScheme,
+  ActivityIndicator,
+  Alert,
+} from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { FontAwesome5, Feather } from '@expo/vector-icons';
 import { Colors } from '@/theme/Colors';
@@ -17,17 +27,17 @@ export default function ResetPasswordScreen() {
 
   const handleReset = async () => {
     if (otp.length < 6 || newPassword.length < 8) {
-      Alert.alert("Invalid input", "Please enter the 6-digit OTP and an 8-character password.");
+      Alert.alert('Invalid input', 'Please enter the 6-digit OTP and an 8-character password.');
       return;
     }
 
     setLoading(true);
     try {
       await AuthService.resetPassword({ email, otp, newPassword });
-      Alert.alert("Success", "Password reset successfully! Please log in.");
+      Alert.alert('Success', 'Password reset successfully! Please log in.');
       router.replace('/auth/login'); // Send them back to login!
     } catch (error: any) {
-      Alert.alert("Error", error.response?.data?.message || "Failed to reset password.");
+      Alert.alert('Error', error.response?.data?.message || 'Failed to reset password.');
     } finally {
       setLoading(false);
     }
@@ -43,7 +53,9 @@ export default function ResetPasswordScreen() {
 
       <View style={styles.content}>
         <Text style={[styles.title, { color: theme.text }]}>Create New Password</Text>
-        <Text style={[styles.subtitle, { color: theme.textSecondary }]}>Enter the 6-digit code sent to {email}</Text>
+        <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
+          Enter the 6-digit code sent to {email}
+        </Text>
 
         <Text style={[styles.label, { color: theme.textSecondary }]}>RESET CODE (OTP)</Text>
         <View style={[styles.inputContainer, { backgroundColor: theme.inputBg, marginBottom: 20 }]}>
@@ -71,18 +83,22 @@ export default function ResetPasswordScreen() {
             onChangeText={setNewPassword}
           />
           <TouchableOpacity onPress={() => setShowPwd(!showPwd)}>
-            <Feather name={showPwd ? "eye" : "eye-off"} size={18} color={theme.textSecondary} />
+            <Feather name={showPwd ? 'eye' : 'eye-off'} size={18} color={theme.textSecondary} />
           </TouchableOpacity>
         </View>
       </View>
 
       <View style={styles.footer}>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={[styles.button, { backgroundColor: theme.primary, opacity: loading ? 0.7 : 1 }]}
           onPress={handleReset}
           disabled={loading}
         >
-          {loading ? <ActivityIndicator color="#111" /> : <Text style={styles.buttonText}>Reset Password</Text>}
+          {loading ? (
+            <ActivityIndicator color="#111" />
+          ) : (
+            <Text style={styles.buttonText}>Reset Password</Text>
+          )}
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -97,7 +113,13 @@ const styles = StyleSheet.create({
   title: { fontSize: 24, fontWeight: 'bold', marginBottom: 8 },
   subtitle: { fontSize: 14, lineHeight: 22, marginBottom: 32 },
   label: { fontSize: 10, fontWeight: 'bold', letterSpacing: 1, marginBottom: 8 },
-  inputContainer: { flexDirection: 'row', alignItems: 'center', height: 56, borderRadius: 12, paddingHorizontal: 16 },
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: 56,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+  },
   inputIcon: { marginRight: 12 },
   input: { flex: 1, fontSize: 16 },
   footer: { paddingHorizontal: 24, paddingBottom: 32 },

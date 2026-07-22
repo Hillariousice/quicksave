@@ -3,7 +3,7 @@ import { Platform } from 'react-native';
 
 // Strict hardware security options
 const SECURE_OPTIONS: SecureStore.SecureStoreOptions = {
-  // iOS: Token is only accessible when the device is unlocked. 
+  // iOS: Token is only accessible when the device is unlocked.
   // It will NOT be backed up to iCloud or transferred to a new device.
   keychainAccessible: SecureStore.WHEN_UNLOCKED_THIS_DEVICE_ONLY,
 };
@@ -36,5 +36,5 @@ export const SecureVault = {
   async getBiometricPreference() {
     const value = await SecureStore.getItemAsync('biometricsEnabled');
     return value === 'true'; // Automatically parses to a boolean for you!
-  }
+  },
 };

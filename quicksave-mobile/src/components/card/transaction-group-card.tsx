@@ -1,6 +1,7 @@
 import React, { memo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import TransactionCard from './transaction-card'; 
+import Animated, { FadeInUp } from 'react-native-reanimated'; 
 
 interface TransactionGroupCardProps {
   group: { title: string; data: any[] };
@@ -11,7 +12,8 @@ interface TransactionGroupCardProps {
 
 function TransactionGroupCard({ group, theme, formatCurrency, colorScheme }: TransactionGroupCardProps) {
   return (
-    <View style={styles.sectionContainer}>
+    <Animated.View 
+      entering={FadeInUp.delay(index * 100).duration(400).springify()} style={styles.sectionContainer}>
       <Text style={[styles.sectionTitle, { color: theme.textSecondary }]}>{group.title}</Text>
       
       <View style={[styles.groupCard, { backgroundColor: theme.inputBg }]}>
@@ -31,7 +33,7 @@ function TransactionGroupCard({ group, theme, formatCurrency, colorScheme }: Tra
           );
         })}
       </View>
-    </View>
+    </Animated.View>
   );
 }
 

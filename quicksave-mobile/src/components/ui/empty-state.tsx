@@ -15,10 +15,10 @@ export default function EmptyState({ icon = 'inbox', title, description, actionL
   const theme = useColorScheme() === 'dark' ? Colors.dark : Colors.light;
 
   return (
-    <View style={styles.container}>
-      <View style={[styles.iconBg, { backgroundColor: theme.inputBg }]}>
+    <Animated.View entering={FadeIn.duration(400)} style={styles.container}>
+      <Animated.View entering={ZoomIn.delay(200).springify()}  style={[styles.iconBg, { backgroundColor: theme.inputBg }]}>
         <Feather name={icon} size={32} color={theme.primary} />
-      </View>
+      </Animated.View>
       <Text style={[styles.title, { color: theme.text }]}>{title}</Text>
       <Text style={[styles.description, { color: theme.textSecondary }]}>{description}</Text>
       
@@ -27,7 +27,7 @@ export default function EmptyState({ icon = 'inbox', title, description, actionL
           <Text style={styles.buttonText}>{actionLabel}</Text>
         </TouchableOpacity>
       )}
-    </View>
+    </Animated.View>
   );
 }
 

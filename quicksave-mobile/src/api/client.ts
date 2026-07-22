@@ -14,14 +14,16 @@ export const injectStore = (storeInstance: any) => {
 };
 
 // 1. REQUEST INTERCEPTOR: Attach Token
-api.interceptors.request.use(async (config) => {
-  const token = await SecureVault.getAccessToken(); 
-  if (token && config.headers) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-}, (error) => Promise.reject(error));
-
+api.interceptors.request.use(
+  async (config) => {
+    const token = await SecureVault.getAccessToken();
+    if (token && config.headers) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error),
+);
 
 //  The Refresh Queue
 let isRefreshing = false;
@@ -42,16 +44,21 @@ api.interceptors.response.use(
     const originalRequest = error.config;
 
     // If it's a 401, not a login/refresh route, and we haven't retried yet
-    if (error.response?.status === 401 && !originalRequest._retry && !originalRequest.url?.includes('/auth/')) {
-      
+    if (
+      error.response?.status === 401 &&
+      !originalRequest._retry &&
+      !originalRequest.url?.includes('/auth/')
+    ) {
       // If a refresh is already happening, queue this request and wait!
       if (isRefreshing) {
-        return new Promise(function(resolve, reject) {
+        return new Promise(function (resolve, reject) {
           failedQueue.push({ resolve, reject });
-        }).then(token => {
-          originalRequest.headers.Authorization = `Bearer ${token}`;
-          return api(originalRequest);
-        }).catch(err => Promise.reject(err));
+        })
+          .then((token) => {
+            originalRequest.headers.Authorization = `Bearer ${token}`;
+            return api(originalRequest);
+          })
+          .catch((err) => Promise.reject(err));
       }
 
       // Lock the interceptor
@@ -63,11 +70,13 @@ api.interceptors.response.use(
         if (!refreshToken) throw new Error('No refresh token found');
 
         // Hit backend for new tokens
-        const response = await axios.post(`${process.env.EXPO_PUBLIC_API_URL}/auth/refresh`, { refreshToken });
+        const response = await axios.post(`${process.env.EXPO_PUBLIC_API_URL}/auth/refresh`, {
+          refreshToken,
+        });
         const { accessToken: newAccess, refreshToken: newRefresh } = response.data.data.tokens;
 
         // Save new tokens
-        await SecureVault.saveTokens(newAccess, newRefresh); 
+        await SecureVault.saveTokens(newAccess, newRefresh);
 
         // Process all queued requests with the new token
         processQueue(null, newAccess);
@@ -75,7 +84,6 @@ api.interceptors.response.use(
         // Retry the original request
         originalRequest.headers.Authorization = `Bearer ${newAccess}`;
         return api(originalRequest);
-
       } catch (refreshError) {
         // If the refresh fails (token expired/blacklisted), wipe everything and force logout
         processQueue(refreshError, null);
@@ -85,7 +93,7 @@ api.interceptors.response.use(
           const { logout } = require('../store/slices/authSlice');
           injectedStore.dispatch(logout());
         }
-         // Kick them to the login screen
+        // Kick them to the login screen
         return Promise.reject(refreshError);
       } finally {
         // Unlock the interceptor
@@ -94,5 +102,5 @@ api.interceptors.response.use(
     }
 
     return Promise.reject(error);
-  }
+  },
 );

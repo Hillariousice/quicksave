@@ -13,7 +13,7 @@ const notificationSlice = createSlice({
     builder.addCase(fetchNotifications.fulfilled, (state, action) => {
       state.items = action.payload;
     });
-  }
+  },
 });
 
 export default notificationSlice.reducer;

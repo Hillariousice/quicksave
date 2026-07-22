@@ -115,7 +115,13 @@ useEffect(() => {
         </View>
 
         {/* WALLET BALANCE CARD */}
-        <View style={styles.balanceCard}>
+         <Animated.View entering={FadeInDown.duration(600).springify().damping(14)}>
+          <LinearGradient
+            colors={[theme.cardGradientStart, theme.cardGradientEnd]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={[styles.balanceCard, { borderColor: theme.inputBorder, borderWidth: 1 }]}
+          >
           <View style={styles.balanceHeader}>
             <Text style={styles.balanceLabel}>TOTAL BALANCE</Text>
             <TouchableOpacity onPress={() => setShowBalance(!showBalance)}>
@@ -134,7 +140,8 @@ useEffect(() => {
             <FontAwesome5 name="shield-alt" size={12} color={theme.primary} />
             <Text style={styles.qsBadgeText}>QS Wallet</Text>
           </View>
-        </View>
+         </LinearGradient>
+        </Animated.View>
 
         {/* QUICK ACTIONS */}
         <View style={styles.actionsContainer}>

@@ -1,6 +1,15 @@
 import { configureStore, combineReducers } from '@reduxjs/toolkit';
 import { useDispatch, useSelector, TypedUseSelectorHook } from 'react-redux';
-import { persistStore, persistReducer, FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER } from 'redux-persist';
+import {
+  persistStore,
+  persistReducer,
+  FLUSH,
+  REHYDRATE,
+  PAUSE,
+  PERSIST,
+  PURGE,
+  REGISTER,
+} from 'redux-persist';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import authReducer from './slices/authSlice';
@@ -20,7 +29,7 @@ const rootReducer = combineReducers({
   notifications: notificationReducer,
   contributions: contributionReducer,
   network: networkReducer,
-  offlineQueue: offlineQueueReducer, 
+  offlineQueue: offlineQueueReducer,
   chat: chatReducer,
   socket: socketReducer,
 });
@@ -30,9 +39,9 @@ const persistConfig = {
   key: 'root',
   version: 1,
   storage: AsyncStorage,
-  // We only persist non-sensitive UI data. 
+  // We only persist non-sensitive UI data.
   // Tokens stay in Expo SecureStore, but caching wallet/groups makes the app open instantly!
-  whitelist: ['wallet', 'groups', 'auth'], 
+  whitelist: ['wallet', 'groups', 'auth'],
 };
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);

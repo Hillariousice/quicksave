@@ -1,8 +1,16 @@
 import React, { useState } from 'react';
-import { 
-  View, Text, StyleSheet, TouchableOpacity, TextInput, 
-  useColorScheme, SafeAreaView, KeyboardAvoidingView, 
-  Platform, ScrollView, ActivityIndicator 
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  TextInput,
+  useColorScheme,
+  SafeAreaView,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { FontAwesome5, Feather } from '@expo/vector-icons';
@@ -21,7 +29,7 @@ export default function RegisterScreen() {
     email: '',
     phone: '',
     password: '',
-    pin: ''
+    pin: '',
   });
 
   // UI State
@@ -30,7 +38,7 @@ export default function RegisterScreen() {
   const [errorMsg, setErrorMsg] = useState('');
 
   const handleChange = (name: string, value: string) => {
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleRegister = async () => {
@@ -38,14 +46,14 @@ export default function RegisterScreen() {
     setLoading(true);
 
     try {
-       // backend api for register 
+      // backend api for register
       await api.post('/auth/register', formData);
-      
+
       // If successful, navigate to the Verify OTP screen
       // We pass the email in the URL so the Verify screen knows who to verify!
       router.push({
         pathname: '/auth/verify',
-        params: { email: formData.email }
+        params: { email: formData.email },
       });
     } catch (error: any) {
       // Extract the clean error message we formatted in our backend Error Handler
@@ -58,12 +66,14 @@ export default function RegisterScreen() {
 
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }]}>
-      <KeyboardAvoidingView 
-        style={{ flex: 1 }} 
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
-        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-          
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
           {/* Top Branding */}
           <View style={styles.branding}>
             <FontAwesome5 name="shield-alt" size={18} color={theme.primary} />
@@ -90,7 +100,12 @@ export default function RegisterScreen() {
             {/* First & Last Name Row */}
             <View style={styles.row}>
               <View style={[styles.inputContainer, { backgroundColor: theme.inputBg, flex: 1 }]}>
-                <Feather name="user" size={18} color={theme.textSecondary} style={styles.inputIcon} />
+                <Feather
+                  name="user"
+                  size={18}
+                  color={theme.textSecondary}
+                  style={styles.inputIcon}
+                />
                 <TextInput
                   style={[styles.input, { color: theme.text }]}
                   placeholder="First Name"
@@ -100,7 +115,12 @@ export default function RegisterScreen() {
                 />
               </View>
               <View style={[styles.inputContainer, { backgroundColor: theme.inputBg, flex: 1 }]}>
-                <Feather name="user" size={18} color={theme.textSecondary} style={styles.inputIcon} />
+                <Feather
+                  name="user"
+                  size={18}
+                  color={theme.textSecondary}
+                  style={styles.inputIcon}
+                />
                 <TextInput
                   style={[styles.input, { color: theme.text }]}
                   placeholder="Last Name"
@@ -127,7 +147,12 @@ export default function RegisterScreen() {
 
             {/* Phone Number */}
             <View style={[styles.inputContainer, { backgroundColor: theme.inputBg }]}>
-              <Feather name="smartphone" size={18} color={theme.textSecondary} style={styles.inputIcon} />
+              <Feather
+                name="smartphone"
+                size={18}
+                color={theme.textSecondary}
+                style={styles.inputIcon}
+              />
               <TextInput
                 style={[styles.input, { color: theme.text }]}
                 placeholder="Phone number"
@@ -150,10 +175,10 @@ export default function RegisterScreen() {
                 onChangeText={(val) => handleChange('password', val)}
               />
               <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
-                <Feather 
-                  name={showPassword ? "eye" : "eye-off"} 
-                  size={18} 
-                  color={theme.textSecondary} 
+                <Feather
+                  name={showPassword ? 'eye' : 'eye-off'}
+                  size={18}
+                  color={theme.textSecondary}
                 />
               </TouchableOpacity>
             </View>
@@ -175,7 +200,7 @@ export default function RegisterScreen() {
           </View>
 
           {/* Submit Button */}
-          <TouchableOpacity 
+          <TouchableOpacity
             style={[styles.button, { backgroundColor: theme.primary, opacity: loading ? 0.7 : 1 }]}
             onPress={handleRegister}
             disabled={loading}
@@ -197,7 +222,6 @@ export default function RegisterScreen() {
               <Text style={[styles.footerLink, { color: theme.primary }]}>Login</Text>
             </TouchableOpacity>
           </View>
-
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -214,21 +238,21 @@ const styles = StyleSheet.create({
   subtitle: { fontSize: 14 },
   form: { gap: 16, marginBottom: 40 },
   row: { flexDirection: 'row', gap: 16 },
-  inputContainer: { 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    height: 56, 
-    borderRadius: 12, 
-    paddingHorizontal: 16 
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: 56,
+    borderRadius: 12,
+    paddingHorizontal: 16,
   },
   inputIcon: { marginRight: 12 },
   input: { flex: 1, fontSize: 16 },
-  button: { 
-    height: 56, 
+  button: {
+    height: 56,
     borderRadius: 28, // Fully rounded like the Figma design
-    justifyContent: 'center', 
-    alignItems: 'center', 
-    marginBottom: 24 
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 24,
   },
   buttonText: { color: '#FFF', fontSize: 16, fontWeight: 'bold' },
   footer: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center' },

@@ -19,13 +19,13 @@ const chatSlice = createSlice({
     },
     markLocalAsRead: (state: any) => {
       state.conversations = state.conversations.map((c: any) => ({ ...c, unread: 0 }));
-    }
+    },
   },
   extraReducers: (builder) => {
     builder.addCase(fetchMessages.fulfilled, (state: any, action: any) => {
       state.messages = action.payload;
     });
-  }
+  },
 });
 
 export const { receiveMessage, markLocalAsRead, setConversations } = chatSlice.actions;

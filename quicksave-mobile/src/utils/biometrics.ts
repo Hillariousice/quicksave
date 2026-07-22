@@ -11,13 +11,15 @@ export const promptBiometrics = async (promptMessage = 'Unlock Ajo'): Promise<bo
     const isEnrolled = await LocalAuthentication.isEnrolledAsync();
     if (!isEnrolled) return false;
 
-       // 3. Detect Android-specific hardware types for better UX
-     let androidPrompt = promptMessage;
+    // 3. Detect Android-specific hardware types for better UX
+    let androidPrompt = promptMessage;
     if (Platform.OS === 'android') {
       const supportedTypes = await LocalAuthentication.supportedAuthenticationTypesAsync();
       if (supportedTypes.includes(LocalAuthentication.AuthenticationType.IRIS)) {
         androidPrompt = 'Scan Iris to Unlock';
-      } else if (supportedTypes.includes(LocalAuthentication.AuthenticationType.FACIAL_RECOGNITION)) {
+      } else if (
+        supportedTypes.includes(LocalAuthentication.AuthenticationType.FACIAL_RECOGNITION)
+      ) {
         androidPrompt = 'Verify Face to Unlock';
       } else {
         androidPrompt = 'Verify Fingerprint to Unlock';
@@ -26,9 +28,9 @@ export const promptBiometrics = async (promptMessage = 'Unlock Ajo'): Promise<bo
     // 4. Prompt the user
     const result = await LocalAuthentication.authenticateAsync({
       promptMessage: Platform.OS === 'android' ? androidPrompt : promptMessage,
-      
+
       // 👉 Android specific: What the cancel button should say
-      cancelLabel: 'Cancel', 
+      cancelLabel: 'Cancel',
       fallbackLabel: 'Use PIN', // Button shown if biometrics fail
       disableDeviceFallback: false, // Allows them to use their phone password if Face ID fails
     });

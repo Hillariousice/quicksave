@@ -7,10 +7,10 @@ export function useCountdown(initialSeconds: number) {
   // 👉 NEW: Extracted the start logic so we can call it again later
   const startTimer = useCallback((startAt: number) => {
     setSeconds(startAt);
-    
+
     // Clear any existing timer before starting a new one
     if (timerRef.current) clearInterval(timerRef.current);
-    
+
     timerRef.current = setInterval(() => {
       setSeconds((prev) => {
         if (prev <= 1) {
@@ -31,7 +31,9 @@ export function useCountdown(initialSeconds: number) {
   }, [initialSeconds, startTimer]);
 
   const formatTime = () => {
-    const mins = Math.floor(seconds / 60).toString().padStart(2, '0');
+    const mins = Math.floor(seconds / 60)
+      .toString()
+      .padStart(2, '0');
     const secs = (seconds % 60).toString().padStart(2, '0');
     return `${mins}:${secs}`;
   };

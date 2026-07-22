@@ -263,7 +263,7 @@ export const generateRotation = catchAsync(async (req: Request, res: Response) =
   }
 
   // 4. Sort members based on the chosen mode
-  let orderedMembers = [...group.members];
+  const orderedMembers = [...group.members];
   if (mode === 'RANDOM') {
     // Fisher-Yates Shuffle Algorithm for cryptographically fair randomness
     for (let i = orderedMembers.length - 1; i > 0; i--) {
@@ -275,7 +275,7 @@ export const generateRotation = catchAsync(async (req: Request, res: Response) =
   }
 
   // 5. Calculate payout dates and map to Prisma creation objects
-  let currentDate = new Date(startDate);
+  const currentDate = new Date(startDate);
   
   const rotationData = orderedMembers.map((member, index) => {
     // Clone the date object so we don't mutate the original

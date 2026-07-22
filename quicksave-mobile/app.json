@@ -4,33 +4,33 @@
     "slug": "quicksave",
     "jsEngine": "hermes",
     "version": "1.0.0",
-    "newArchEnabled": false,
+    "newArchEnabled": true,
     "orientation": "portrait",
-    "icon": "./assets/icon-app.png",
+    "icon": "./assets/main-logo.png",
     "scheme": "quicksave",
     "userInterfaceStyle": "automatic",
     "splash": {
-      "image": "./assets/icon-app.png",
+      "image": "./assets/main-logo.png",
       "resizeMode": "contain",
       "backgroundColor": "#FFFFFF",
       "dark": {
-        "image": "./assets/icon-app.png",
+        "image": "./assets/main-logo.png",
         "backgroundColor": "#121212"
       }
     },
     "ios": {
-      "icon": "./assets/icon-app.png",
+      "icon": "./assets/main-logo.png",
       "bundleIdentifier": "com.clotidestark25.quicksave",
       "infoPlist": {
-        "NSFaceIDUsageDescription": "QuickSave uses Face ID to securely unlock your vault."
+        "NSFaceIDUsageDescription": "QuickSave uses Face ID to securely unlock your vault and authorize transactions.",
+        "NSCameraUsageDescription": "QuickSave needs camera access to scan Group Invite QR codes.",
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/icon-app.png",
-        "backgroundImage": "./assets/images/android-icon-background.png",
-        "monochromeImage": "./assets/images/android-icon-monochrome.png"
+        "backgroundColor": "#0A0A0A",
+        "foregroundImage": "./assets/main-logo.png"
       },
       "predictiveBackGestureEnabled": false,
       "permissions": [
@@ -39,6 +39,7 @@
         "android.permission.CAMERA",
         "android.permission.RECORD_AUDIO"
       ],
+      "versionCode": 1,
       "package": "com.clotidestark25.quicksave"
     },
     "web": {
@@ -66,7 +67,16 @@
       "expo-secure-store",
       "@react-native-community/datetimepicker",
       "expo-web-browser",
-      "expo-sqlite"
+      "expo-sqlite",
+      [
+        "@sentry/react-native/expo",
+        {
+          "url": "https://sentry.io/",
+          "project": "react-native",
+          "organization": "Quicksave"
+        }
+      ],
+      "@sentry/react-native"
     ],
     "experiments": {
       "typedRoutes": true,

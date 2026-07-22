@@ -1,7 +1,12 @@
 import React, { useEffect } from 'react';
-import { 
-  View, Text, StyleSheet, TouchableOpacity, 
-  useColorScheme, SafeAreaView, Alert 
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  useColorScheme,
+  SafeAreaView,
+  Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { FontAwesome5, MaterialCommunityIcons, Feather } from '@expo/vector-icons';
@@ -27,11 +32,11 @@ export default function BiometricSetupScreen() {
 
   const handleEnableBiometrics = async () => {
     const isEnrolled = await LocalAuthentication.isEnrolledAsync();
-    
+
     if (!isEnrolled) {
       Alert.alert(
-        'Not Enrolled', 
-        'No biometrics are set up on this device. Please set them up in your phone settings.'
+        'Not Enrolled',
+        'No biometrics are set up on this device. Please set them up in your phone settings.',
       );
       return;
     }
@@ -46,7 +51,10 @@ export default function BiometricSetupScreen() {
       await SecureStore.setItemAsync('biometricsEnabled', 'true');
       router.replace('/(tabs)'); // Send them to the dashboard!
     } else {
-      Alert.alert('Authentication Failed', 'We could not verify your biometrics. Try again or skip.');
+      Alert.alert(
+        'Authentication Failed',
+        'We could not verify your biometrics. Try again or skip.',
+      );
     }
   };
 
@@ -58,7 +66,6 @@ export default function BiometricSetupScreen() {
 
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }]}>
-      
       {/* Top Header */}
       <View style={styles.header}>
         <View style={styles.branding}>
@@ -72,10 +79,8 @@ export default function BiometricSetupScreen() {
 
       {/* Main Content Area */}
       <View style={styles.content}>
-        
         {/* The Inner Card */}
         <View style={[styles.card, { backgroundColor: theme.inputBg }]}>
-          
           {/* Glowing Fingerprint Icon */}
           <View style={styles.iconContainer}>
             <View style={[styles.iconGlow, { borderColor: theme.primary + '40' }]}>
@@ -85,26 +90,33 @@ export default function BiometricSetupScreen() {
 
           {/* Text */}
           <Text style={[styles.title, { color: theme.text }]}>
-            Enable Face ID /{"\n"}Fingerprint
+            Enable Face ID /{'\n'}Fingerprint
           </Text>
           <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
-            Log in faster and more securely{"\n"}with your device's biometric{"\n"}authentication.
+            Log in faster and more securely{'\n'}with your device's biometric{'\n'}authentication.
           </Text>
 
           {/* Action Buttons */}
-          <TouchableOpacity 
+          <TouchableOpacity
             style={[styles.primaryButton, { backgroundColor: theme.primary }]}
             onPress={handleEnableBiometrics}
           >
             <Text style={styles.primaryButtonText}>Enable Biometrics</Text>
-            <MaterialCommunityIcons name="check-decagram" size={18} color="#111" style={{ marginLeft: 6 }} />
+            <MaterialCommunityIcons
+              name="check-decagram"
+              size={18}
+              color="#111"
+              style={{ marginLeft: 6 }}
+            />
           </TouchableOpacity>
 
-          <TouchableOpacity 
+          <TouchableOpacity
             style={[styles.skipButton, { borderColor: theme.inputBorder }]}
             onPress={handleSkip}
           >
-            <Text style={[styles.skipButtonText, { color: theme.textSecondary }]}>Skip for now</Text>
+            <Text style={[styles.skipButtonText, { color: theme.textSecondary }]}>
+              Skip for now
+            </Text>
           </TouchableOpacity>
 
           {/* Footer Security Text */}
@@ -114,7 +126,6 @@ export default function BiometricSetupScreen() {
               Secured by Quicksave Vault Technology
             </Text>
           </View>
-
         </View>
       </View>
     </SafeAreaView>
@@ -123,19 +134,19 @@ export default function BiometricSetupScreen() {
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1 },
-  header: { 
-    flexDirection: 'row', 
-    justifyContent: 'space-between', 
-    alignItems: 'center', 
-    paddingHorizontal: 24, 
-    paddingTop: 20 
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+    paddingTop: 20,
   },
   branding: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   brandText: { fontSize: 16, fontWeight: '700', letterSpacing: 1 },
-  content: { 
-    flex: 1, 
-    justifyContent: 'center', 
-    paddingHorizontal: 20 
+  content: {
+    flex: 1,
+    justifyContent: 'center',
+    paddingHorizontal: 20,
   },
   card: {
     borderRadius: 24,
@@ -157,37 +168,37 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#FF8C0010', // Extremely faint orange background
   },
-  title: { 
-    fontSize: 22, 
-    fontWeight: 'bold', 
-    textAlign: 'center', 
+  title: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    textAlign: 'center',
     marginBottom: 12,
     lineHeight: 30,
   },
-  subtitle: { 
-    fontSize: 14, 
-    textAlign: 'center', 
-    lineHeight: 22, 
-    marginBottom: 32 
+  subtitle: {
+    fontSize: 14,
+    textAlign: 'center',
+    lineHeight: 22,
+    marginBottom: 32,
   },
-  primaryButton: { 
+  primaryButton: {
     flexDirection: 'row',
-    width: '100%', 
-    height: 56, 
-    borderRadius: 28, 
-    justifyContent: 'center', 
-    alignItems: 'center', 
-    marginBottom: 16 
+    width: '100%',
+    height: 56,
+    borderRadius: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
   },
   primaryButtonText: { color: '#111', fontSize: 16, fontWeight: 'bold' },
-  skipButton: { 
-    width: '100%', 
-    height: 56, 
-    borderRadius: 28, 
+  skipButton: {
+    width: '100%',
+    height: 56,
+    borderRadius: 28,
     borderWidth: 1,
-    justifyContent: 'center', 
+    justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 30
+    marginBottom: 30,
   },
   skipButtonText: { fontSize: 16, fontWeight: '600' },
   securityFooter: { flexDirection: 'row', alignItems: 'center', gap: 6 },
