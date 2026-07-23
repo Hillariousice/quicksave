@@ -1,9 +1,12 @@
+/* eslint-disable react-hooks/set-state-in-effect */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable react/jsx-no-undef */
 "use client";
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { signOut, useSession } from "next-auth/react"; // 👉 Import NextAuth signOut
+import { useRouter } from "next/navigation"; // 👉 Import NextAuth signOut
+
 import { 
   LayoutDashboard, Users, UsersRound, ArrowRightLeft, 
   Send, Settings, Shield, Ticket, LogOut, HelpCircle, 
@@ -11,7 +14,7 @@ import {
 } from "lucide-react";
 // import router from "next/router";
 import Image from "next/image";
-
+import { useEffect, useState } from "react";
 const navItems = [
   { name: "DASHBOARD", icon: LayoutDashboard, path: "/dashboard" },
   { name: "GROUPS", icon: UsersRound, path: "/dashboard/groups" },
@@ -24,7 +27,20 @@ const navItems = [
 
 export default function Sidebar({ isOpen, setIsOpen }: { isOpen: boolean, setIsOpen: (val: boolean) => void }) {
   const pathname = usePathname();
-  const {data: session} = useSession();
+  const [adminData,setAdminData] = useState<any>(null);
+  const router = useRouter();
+
+useEffect(() => {
+  const adminData = localStorage.getItem("adminData");
+  if (adminData) {
+    setAdminData(JSON.parse(adminData));
+  }
+}, []);
+
+  const handleLogout = () => {
+  localStorage.removeItem("adminAccessToken");
+  router.push("/auth/login");
+};
 
   return (
     <aside className={`w-64 h-screen bg-gray-50 dark:bg-[#0A0A0A] border-r border-gray-200 dark:border-gray-800 flex flex-col fixed left-0 top-0 z-30 transition-transform duration-300 ease-in-out ${
@@ -66,7 +82,7 @@ export default function Sidebar({ isOpen, setIsOpen }: { isOpen: boolean, setIsO
           SUPPORT
         </button> */}
         <button 
-          onClick={() => signOut({ callbackUrl: '/auth/login' })} 
+          onClick={handleLogout} 
           className="flex items-center gap-4 px-4 py-3 rounded-lg text-sm font-semibold tracking-wide text-gray-500 hover:text-red-500 hover:bg-red-500/10 transition-all"
         >
           <LogOut className="w-5 h-5" />
@@ -83,7 +99,7 @@ export default function Sidebar({ isOpen, setIsOpen }: { isOpen: boolean, setIsO
     <div className="relative">
       <div className="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-800 flex items-center justify-center overflow-hidden border-2 border-transparent group-hover:border-[#FF8C00] transition">
         <Image 
-          src={session?.user?.image || "/placeholder.jpg"} 
+          src={adminData?.photo || "/placeholder.jpg"} 
           alt="User Avatar" 
           width={40} 
           height={40} 
@@ -97,10 +113,10 @@ export default function Sidebar({ isOpen, setIsOpen }: { isOpen: boolean, setIsO
     {/* Info Section */}
     <div>
       <p className="text-sm font-bold text-gray-900 dark:text-white transition group-hover:text-[#FF8C00]">
-        {session?.user?.name}
+        {adminData?.name}
       </p>
       <p className="text-xs text-gray-500 truncate w-32 group-hover:text-gray-400 transition">
-        {session?.user?.email}
+        {adminData?.email}
       </p>
     </div>
   </div>

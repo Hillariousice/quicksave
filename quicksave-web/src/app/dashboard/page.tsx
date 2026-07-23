@@ -5,7 +5,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useSession } from "next-auth/react";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Calendar, Download, Activity, ChevronDown } from "lucide-react";
 import TransactionTable from "@/src/components/Dashboard/TransactionTable";
@@ -13,35 +12,46 @@ import { useRouter } from "next/navigation";
 import { downloadCSV } from "@/src/utils/export";
 
 export default function DashboardPage() {
-  const { data: session, status } = useSession();
+
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
    const router = useRouter()
   const [dateRange, setDateRange] = useState("30"); 
 
-  const fetchStats = async () => {
-    setLoading(true);
-    try {
-      // Pass the range as a query parameter
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/dashboard?range=${dateRange}`, {
-        headers: { Authorization: `Bearer ${session?.accessToken}` }
-      });
-      const result = await res.json();
-      if (res.ok) setData(result.data);
-    } catch (err) {
-      console.error("Failed to load stats");
-    } finally {
-      setLoading(false);
-    }
-  };
+  
+   useEffect(() => {
+    // 👉 1. Check LocalStorage for the token
+    const token = localStorage.getItem("adminAccessToken");
 
-  // Re-fetch whenever dateRange changes
-  useEffect(() => {
-    if (status === "authenticated") {
-      fetchStats();
+    if (!token) {
+      // If no token, kick them back to login!
+      router.push("/login");
+      return;
     }
-  }, [session, status, dateRange]);
+
+    // 👉 2. Fetch the data using the token
+    const fetchStats = async () => {
+      try {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/dashboard`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const result = await res.json();
+        
+        if (res.ok && result.success) {
+          setData(result.data);
+        } else {
+          setError(result.message || "Failed to load dashboard data");
+        }
+      } catch (err) {
+        setError("Network error. Please check your backend connection.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStats();
+  }, [router]);
 
 
   // Reusable List Component

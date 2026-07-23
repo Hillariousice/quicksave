@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useState } from "react";
@@ -12,27 +13,37 @@ export default function AdminLogin() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const handleLogin = async (e: React.FormEvent) => {
+ const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError("");
 
-   const result = await signIn("credentials", {
-  redirect: false,
-  email,
-  password,
-});
+    try {
 
-if (result?.error) {
-  // result.error will now contain "Incorrect current password" 
-  // or "Please verify your email" instead of just a 401 code
-  setError(result.error); 
-} else {
-  router.push("/dashboard");
-}
-    setLoading(false);
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const result = await res.json();
+
+      if (res.ok && result.success) {
+        // 👉 2. Save the token to local storage
+        localStorage.setItem("adminAccessToken", result.data.tokens.accessToken);
+        
+        // 👉 3. Route to dashboard!
+        router.push("/dashboard");
+      } else {
+        // Show the exact error message from your Express backend
+        setError(result.message || "Invalid credentials.");
+      }
+    } catch (err: any) {
+      setError("Network error. Could not connect to the backend.");
+    } finally {
+      setLoading(false);
+    }
   };
-
   return (
     <div className="min-h-screen bg-[#0A0A0A] flex flex-col items-center justify-center relative font-sans text-gray-300">
       
