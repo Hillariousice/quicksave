@@ -1,39 +1,41 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
 import { useEffect, useState } from "react";
-import { useSession } from "next-auth/react";
+// import { useSession } from "next-auth/react";
 import { Wallet, Clock, Calendar, Download, CheckCircle2, AlertTriangle, Eye, X, Activity } from "lucide-react";
 import { downloadAdminReport } from "@/src/utils/export";
+import { useRouter } from "next/router";
 
 export default function PayoutsPage() {
-  const { data: session } = useSession();
+  const router = useRouter();
   const [data, setData] = useState<any>(null);
   const [isModalOpen, setIsModalOpen] = useState(false); // FOR NEW PAYOUT
   const [isExporting, setIsExporting] = useState(false);
-
+  const token = localStorage.getItem("adminAccessToken");
   const fetchPayouts = async () => {
     const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/payouts`, {
-      headers: { Authorization: `Bearer ${session?.accessToken}` }
+      headers: { Authorization: `Bearer ${token}` }
     });
     const result = await res.json();
     if (result.success) setData(result.data);
   };
 
   useEffect(() => {
-    if (session?.accessToken)
+    if (token)
       { 
         fetchPayouts()
 
       };
-  }, [session]);
+  }, [token]);
 
   const handlePayoutExport = async () => {
     setIsExporting(true);
     // You can use the same transaction export or create a specific Payout export
     await downloadAdminReport(
       '/admin/transactions/export?type=PAYOUT', 
-      session?.accessToken as string, 
+       token as string, 
       'Payout_Report.csv'
     );
     setIsExporting(false);

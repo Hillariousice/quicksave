@@ -1,13 +1,16 @@
+/* eslint-disable @next/next/no-img-element */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
 import { useEffect, useState } from "react";
-import { useSession } from "next-auth/react";
-import { Search, Download, ChevronDown, ArrowUpRight, ArrowDownLeft, Wallet, AlertCircle, Calendar } from "lucide-react";
+// import { useSession } from "next-auth/react";
+import { Search, Download, ArrowUpRight, ArrowDownLeft, Wallet, AlertCircle, Calendar } from "lucide-react";
 import { downloadAdminReport } from "@/src/utils/export";
+import { useRouter } from "next/navigation";
 
 export default function TransactionsDirectoryPage() {
-  const { data: session } = useSession();
+  const router = useRouter();
   const [transactions, setTransactions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isExporting, setIsExporting] = useState(false);
@@ -15,6 +18,7 @@ export default function TransactionsDirectoryPage() {
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState("All");
   const [dateRange, setDateRange] = useState("all"); 
+  const token = localStorage.getItem("adminAccessToken");
 
    const fetchTxs = async () => {
     setLoading(true);
@@ -35,7 +39,7 @@ export default function TransactionsDirectoryPage() {
     
     try {
         const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/transactions${query}`, {
-          headers: { Authorization: `Bearer ${session?.accessToken}` }
+          headers: { Authorization: `Bearer ${token}` }
         });
         const result = await res.json();
         setTransactions(result.data || []);
@@ -47,15 +51,15 @@ export default function TransactionsDirectoryPage() {
   };
 
   useEffect(() => {
-    if (session?.accessToken) fetchTxs();
-  }, [session, typeFilter, dateRange]); // Re-fetch when type changes
+    if (token) fetchTxs();
+  }, [token, typeFilter, dateRange]); // Re-fetch when type changes
 
  const handleExport = async () => {
-    if (!session?.accessToken) return;
+    if (!token) return;
     setIsExporting(true);
     await downloadAdminReport(
       '/admin/transactions/export', 
-      session.accessToken, 
+      token, 
       'Quicksave_Transactions.csv'
     );
     setIsExporting(false);

@@ -2,15 +2,16 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useSession } from "next-auth/react";
 import { 
   Shield, DollarSign, Bell, Users, Key, Lock, X, 
   Activity, Loader2, Download, CheckCircle2, AlertCircle, Info 
 } from "lucide-react";
 import { downloadAdminReport } from "@/src/utils/export";
+import { useRouter } from "next/router";
 
 export default function FullSettingsPage() {
-  const { data: session }: any = useSession();
+  const router = useRouter();
+  const token = localStorage.getItem("adminAccessToken");
   const [activeTab, setActiveTab] = useState("Security");
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -20,7 +21,7 @@ export default function FullSettingsPage() {
   const fetchSettings = async () => {
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/settings`, {
-        headers: { Authorization: `Bearer ${session?.accessToken}` }
+        headers: { Authorization: `Bearer ${token}` }
       });
       const result = await res.json();
       // Ensure we set data only if result.data exists
@@ -35,14 +36,14 @@ export default function FullSettingsPage() {
   };
 
   useEffect(() => {
-    if (session?.accessToken) fetchSettings();
-  }, [session]);
+    if (token) fetchSettings();
+  }, [token]);
 
   const updateSetting = async (payload: any) => {
     try {
       await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/settings/config`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.accessToken}` },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify(payload)
       });
       fetchSettings();

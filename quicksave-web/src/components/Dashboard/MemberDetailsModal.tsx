@@ -1,18 +1,19 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useEffect, useState } from "react";
-import { X, Mail, Phone, MapPin, Calendar, AlertTriangle, Activity,AlertCircle } from "lucide-react";
-import { useSession } from "next-auth/react";
+import { X, Mail, Phone, MapPin, Calendar,  Activity,AlertCircle } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 export default function MemberDetailsModal({ memberId, onClose, token }: any) {
-  const { data: session }: any = useSession();
+   const router = useRouter();
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [isPromoting, setIsPromoting] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false); 
 
-  const isSuperAdmin = session?.user?.role === "SUPER_ADMIN";
+  const isSuperAdmin = token?.user?.role === "SUPER_ADMIN";
 
   useEffect(() => {
     if (memberId && token) {

@@ -5,29 +5,35 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useSession } from "next-auth/react";
+// import { useSession } from "next-auth/react";
 import { Search, Download, UserPlus, Filter, MoreVertical, ShieldAlert, Activity, X } from "lucide-react";
 import MemberDetailsModal from "@/src/components/Dashboard/MemberDetailsModal";
 import { downloadCSV } from "@/src/utils/export";
+import { useRouter } from "next/navigation";
 
 export default function MembersDirectoryPage() {
-  const { data: session } = useSession();
+  // const { data: session } = useSession();
+  const router = useRouter();
   const [data, setData] = useState<{ members: any[], stats: any } | null>(null);
   const [selectedMember, setSelectedMember] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("All Statuses");
+  const token = localStorage.getItem("adminAccessToken");
 
   const fetchMembers = async () => {
     const query = `?q=${search}&status=${statusFilter}`;
     const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/members${query}`, {
-      headers: { Authorization: `Bearer ${session?.accessToken}` }
+      headers: { Authorization: `Bearer ${token}` }
     });
     const result = await res.json();
     setData(result.data || []);
   };
 
-  useEffect(() => { if (session) fetchMembers(); }, [session, search, statusFilter]);
+  useEffect(() => { if (!token) {
+      router.push("/login");
+      return;
+    } fetchMembers(); }, [router, search, statusFilter]);
 
 
   const StatCard = ({ title, value, sub, isPositive }: any) => (

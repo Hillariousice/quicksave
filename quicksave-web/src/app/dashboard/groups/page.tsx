@@ -1,12 +1,14 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable react-hooks/exhaustive-deps */
 "use client";
 
-import { useEffect, useState } from "react";
-import { useSession } from "next-auth/react";
+import { useEffect, useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Filter, Plus, Eye, Edit2, ChevronLeft, ChevronRight, X } from "lucide-react";
 
 export default function GroupsDirectoryPage() {
-  const { data: session } = useSession();
+  const router = useRouter();
   const [data, setData] = useState<any>(null);
   const [groups, setGroups] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -14,24 +16,29 @@ export default function GroupsDirectoryPage() {
   const [editStatus, setEditStatus] = useState("");
   const [showEditGroup, setShowEditGroup] = useState(false);
   const [formLoading, setFormLoading] = useState(false);
-
+  const token = localStorage.getItem("adminAccessToken");
   useEffect(() => {
-    if (session?.accessToken) {
-      fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/groups`, {
-        headers: { Authorization: `Bearer ${session.accessToken}` }
+
+   
+    if (!token) {
+      router.push("/login");
+      return;
+    }
+     fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/groups`, {
+        headers: { Authorization: `Bearer ${token}` }
       })
       .then(res => res.json())
       .then(result => setGroups(result.data || []))
       .catch(() => console.error("Failed to fetch"))
       .finally(() => setLoading(false));
-    }
-  }, [session]);
+  }, [router]);
   
-  const fetchDetails = () => {
+  const fetchDetails = useCallback(() => {
+
     if(groups.length === 0) return;
     for (const g of groups) {
       fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/groups/${g.id}`, {
-        headers: { Authorization: `Bearer ${session?.accessToken}` }
+        headers: { Authorization: `Bearer ${token}` }
       })
       .then(res => res.json())
       .then(result => {
@@ -40,21 +47,23 @@ export default function GroupsDirectoryPage() {
         setEditStatus(result.data.status);
       });
     }
-    };
+    });
   
     useEffect(() => {
-      if (session?.accessToken) fetchDetails();
-    }, [groups, session]);
+
+      if (token) fetchDetails();
+    }, [fetchDetails, groups]);
   
    const handleEditGroup = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormLoading(true);
+
     try {
       if(groups.length <= 1) return;
       for (const g of groups) {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/groups/${g.id}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.accessToken}` },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ name: editName, status: editStatus })
       });
       if (res.ok) {

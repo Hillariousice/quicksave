@@ -2,14 +2,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useSession } from "next-auth/react";
+// import { useSession } from "next-auth/react";
 import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft, Edit2, UserPlus, CheckCircle2, XCircle, Clock, View, X } from "lucide-react";
 
 export default function GroupAnalyticsPage() {
   const { id } = useParams();
   const router = useRouter();
-  const { data: session } = useSession();
+  // const { data: session } = useSession();
   const [data, setData] = useState<any>(null);
   const [memberEmail, setMemberEmail] = useState("");
   const [editName, setEditName] = useState("");
@@ -17,11 +17,17 @@ export default function GroupAnalyticsPage() {
   const [showAddMember, setShowAddMember] = useState(false);
   const [showEditGroup, setShowEditGroup] = useState(false);
   const [formLoading, setFormLoading] = useState(false);
-
+  const token = localStorage.getItem("adminAccessToken");
 const fetchDetails = () => {
+
+     
+      if (!token) {
+        router.push("/login");
+        return;
+      }
     // 👉 FIX: Added (session as any)
     fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/groups/${id}`, {
-      headers: { Authorization: `Bearer ${(session as any)?.accessToken}` }
+      headers: { Authorization: `Bearer ${token}` }
     })
     .then(res => res.json())
     .then(result => {
@@ -32,18 +38,20 @@ const fetchDetails = () => {
   };
 
   useEffect(() => {
+
     // 👉 FIX: Added (session as any)
-    if ((session as any)?.accessToken) fetchDetails();
-  }, [id, session]);
+    if (token) fetchDetails();
+  }, [id]);
 
    const handleAddMember = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormLoading(true);
+
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/groups/${id}/members`, {
         method: 'POST',
         // 👉 FIX: Added (session as any)
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${(session as any)?.accessToken}` },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ email: memberEmail })
       });
       const result = await res.json();
@@ -60,11 +68,12 @@ const fetchDetails = () => {
   const handleEditGroup = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormLoading(true);
+
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/groups/${id}`, {
         method: 'PATCH',
         // 👉 FIX: Added (session as any)
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${(session as any)?.accessToken}` },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ name: editName, status: editStatus })
       });
       if (res.ok) {

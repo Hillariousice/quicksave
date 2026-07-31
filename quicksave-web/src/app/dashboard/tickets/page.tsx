@@ -1,18 +1,22 @@
+/* eslint-disable @next/next/no-img-element */
+/* eslint-disable react-hooks/exhaustive-deps */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
 import { useState, useEffect , useCallback} from "react";
-import { useSession } from "next-auth/react";
+// import { useSession } from "next-auth/react";
 import { Search, Plus, Ticket, Clock, CheckCircle2, Filter, Download, Eye, CornerUpLeft, X, Loader2 } from "lucide-react";
 import { downloadAdminReport } from "@/src/utils/export";
+import { useRouter } from "next/navigation";
 
 export default function SupportTicketsPage() {
-  const { data: session } = useSession();
+  const router = useRouter();
   const [tickets, setTickets] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
-
+  const token = localStorage.getItem("adminAccessToken");
   // Filter States
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("All");
@@ -27,7 +31,7 @@ const [stats, setStats] = useState({
 
 const fetchStats = async () => {
   const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/tickets/stats`, {
-    headers: { Authorization: `Bearer ${session?.accessToken}` }
+    headers: { Authorization: `Bearer ${token}` }
   });
   const result = await res.json();
   if (result.success) setStats(result.data);
@@ -42,7 +46,7 @@ const fetchTickets = useCallback(async () => {
   
   try {
     const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/tickets${query}`, {
-      headers: { Authorization: `Bearer ${session?.accessToken}` }
+      headers: { Authorization: `Bearer ${token}` }
     });
 
     const result = await res.json();
@@ -62,16 +66,16 @@ const fetchTickets = useCallback(async () => {
   } finally {
     setLoading(false);
   }
-}, [session, search, category, priority, status]);
+}, [token, search, category, priority, status]);
 
   useEffect(() => {
-  if (session?.accessToken) {
+  if (token) {
     fetchStats(); // Fetch stats alongside the ticket list
   }
-}, [session]);
+}, [token]);
 
   useEffect(() => {
-    if (session?.accessToken) {
+    if (token) {
       const delayDebounce = setTimeout(fetchTickets, 500);
       return () => clearTimeout(delayDebounce);
     }
@@ -79,7 +83,7 @@ const fetchTickets = useCallback(async () => {
 
   const handleExport = async () => {
     setIsExporting(true);
-    await downloadAdminReport('/admin/tickets/export', session?.accessToken as string, 'Tickets.csv');
+    await downloadAdminReport('/admin/tickets/export', token as string, 'Tickets.csv');
     setIsExporting(false);
   };
 
