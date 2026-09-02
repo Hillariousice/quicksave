@@ -23,17 +23,29 @@ Sentry.init({
   tracesSampleRate: 1.0,
 });
 
+const allowedOrigins = [
+  'https://quicksave-git-main-hillariousices-projects.vercel.app', // Your Vercel URL
+  'http://localhost:3000' ,// For local development
+  'http://localhost:3001', 
+  'http://localhost:8081', 
+  'https://quicksave-red.vercel.app', 
+  '*'
+];
 app.use(helmet()); 
+
 app.use(cors({
-  origin: [
-    'http://localhost:3001', 
-    'http://localhost:8081', 
-    'https://quicksave-red.vercel.app', 
-    '*'
-  ],
-  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
-  credentials: true
-})); 
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.indexOf(origin) === -1) {
+      return callback(new Error('CORS policy violation'), false);
+    }
+    return callback(null, true);
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
 
 app.use(express.json()); 
 
