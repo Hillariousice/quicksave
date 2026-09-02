@@ -19,10 +19,10 @@ export default function DashboardPage() {
    const router = useRouter()
   const [dateRange, setDateRange] = useState("30"); 
 
-  
+  const token = typeof window !== "undefined" ? localStorage.getItem("adminAccessToken") : null;
    useEffect(() => {
     // 👉 1. Check LocalStorage for the token
-    const token = localStorage.getItem("adminAccessToken");
+   
 
     if (!token) {
       // If no token, kick them back to login!

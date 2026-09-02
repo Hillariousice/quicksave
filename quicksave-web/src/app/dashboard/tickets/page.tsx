@@ -15,7 +15,7 @@ export default function SupportTicketsPage() {
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
-  const token = localStorage.getItem("adminAccessToken");
+  const token = typeof window !== "undefined" ? localStorage.getItem("adminAccessToken") : null;
   // Filter States
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("All");

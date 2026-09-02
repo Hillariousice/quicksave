@@ -1,17 +1,18 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
 import { useState, useEffect } from "react";
 import { 
   Shield, DollarSign, Bell, Users, Key, Lock, X, 
-  Activity, Loader2, Download, CheckCircle2, AlertCircle, Info 
+  Activity, Loader2, Download, Info 
 } from "lucide-react";
 import { downloadAdminReport } from "@/src/utils/export";
 import { useRouter } from "next/router";
 
 export default function FullSettingsPage() {
   const router = useRouter();
-  const token = localStorage.getItem("adminAccessToken");
+  const token = typeof window !== "undefined" ? localStorage.getItem("adminAccessToken") : null;
   const [activeTab, setActiveTab] = useState("Security");
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -61,8 +62,11 @@ export default function FullSettingsPage() {
   );
 
   // Safely extract arrays with fallbacks to prevent .length or .map crashes
-  const whitelistedIPs = data?.config?.whitelistedIPs || [];
-  const adminTeam = data?.adminTeam || [];
+   const rawIps = data?.config?.whitelistedIPs;
+  const whitelistedIPs = Array.isArray(rawIps) ? rawIps : [];
+  
+  const rawAdmins = data?.adminTeam;
+  const adminTeam = Array.isArray(rawAdmins) ? rawAdmins : [];
 
   return (
     <div className="space-y-6 relative">
@@ -88,7 +92,7 @@ export default function FullSettingsPage() {
           <p className="text-gray-500 text-sm">Global configurations for QuickSave operations.</p>
         </div>
         <button 
-          onClick={() => downloadAdminReport('/admin/transactions/export', session.accessToken, 'System_Config.csv')}
+          onClick={() => downloadAdminReport('/admin/transactions/export', token, 'System_Config.csv')}
           className="flex items-center gap-2 bg-white dark:bg-[#11181C] border border-gray-200 dark:border-gray-800 px-4 py-2 rounded-lg text-sm font-bold text-gray-700 dark:text-gray-300"
         >
           <Download className="w-4 h-4" /> Export Config
