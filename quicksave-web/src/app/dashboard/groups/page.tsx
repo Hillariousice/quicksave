@@ -1,5 +1,4 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable react-hooks/exhaustive-deps */
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
@@ -9,69 +8,77 @@ import { Filter, Plus, Eye, Edit2, ChevronLeft, ChevronRight, X } from "lucide-r
 
 export default function GroupsDirectoryPage() {
   const router = useRouter();
-  const [data, setData] = useState<any>(null);
   const [groups, setGroups] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  
+  // 👉 FIX: Track exactly which group we are editing!
+  const [editingGroupId, setEditingGroupId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
   const [editStatus, setEditStatus] = useState("");
-  const [showEditGroup, setShowEditGroup] = useState(false);
   const [formLoading, setFormLoading] = useState(false);
-  const token = localStorage.getItem("adminAccessToken");
-  useEffect(() => {
 
-   
+  // We check if running in browser to safely get localStorage
+  const token = typeof window !== "undefined" ? localStorage.getItem("adminAccessToken") : null;
+
+  const fetchGroups = useCallback(() => {
     if (!token) {
       router.push("/login");
       return;
     }
-     fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/groups`, {
-        headers: { Authorization: `Bearer ${token}` }
-      })
-      .then(res => res.json())
-      .then(result => setGroups(result.data || []))
-      .catch(() => console.error("Failed to fetch"))
-      .finally(() => setLoading(false));
-  }, [router]);
-  
-  const fetchDetails = useCallback(() => {
+    
+    fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/groups`, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    .then(res => res.json())
+    .then(result => setGroups(result.data || []))
+    .catch(() => console.error("Failed to fetch groups"))
+    .finally(() => setLoading(false));
+  }, [token, router]);
 
-    if(groups.length === 0) return;
-    for (const g of groups) {
-      fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/groups/${g.id}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      })
-      .then(res => res.json())
-      .then(result => {
-        setData(result.data);
-        setEditName(result.data.name);
-        setEditStatus(result.data.status);
-      });
-    }
-    });
-  
-    useEffect(() => {
+  useEffect(() => {
+    fetchGroups();
+  }, [fetchGroups]);
 
-      if (token) fetchDetails();
-    }, [fetchDetails, groups]);
+  // 👉 FIX: When clicking Edit, we populate the modal with THIS specific group's data
+  const openEditModal = (group: any) => {
+    setEditingGroupId(group.id);
+    setEditName(group.name);
+    setEditStatus(group.status);
+  };
+
+  const closeEditModal = () => {
+    setEditingGroupId(null);
+    setEditName("");
+    setEditStatus("");
+  };
   
-   const handleEditGroup = async (e: React.FormEvent) => {
+  const handleEditGroup = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!editingGroupId) return;
+
     setFormLoading(true);
 
     try {
-      if(groups.length <= 1) return;
-      for (const g of groups) {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/groups/${g.id}`, {
+      // 👉 FIX: Send the patch request ONLY for the selected group!
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/groups/${editingGroupId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ name: editName, status: editStatus })
       });
+      
       if (res.ok) {
-        setShowEditGroup(false);
-        fetchDetails();
+        closeEditModal();
+        fetchGroups(); // Refresh the table so we see the new name/status instantly!
+      } else {
+        const data = await res.json();
+        alert(data.message || "Failed to update group");
       }
+    } catch (err) {
+      console.error(err);
+      alert("Network error.");
+    } finally { 
+      setFormLoading(false); 
     }
-    } finally { setFormLoading(false); }
   };
 
   const getStatusStyle = (status: string) => {
@@ -82,42 +89,46 @@ export default function GroupsDirectoryPage() {
 
   return (
     <div className="space-y-6">
-      {showEditGroup && (
-              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-                <div className="bg-white dark:bg-[#11181C] w-full max-w-md rounded-2xl border border-gray-800 p-8 shadow-2xl">
-                  <div className="flex justify-between items-center mb-6">
-                    <h2 className="text-xl font-bold">Edit Group Meta</h2>
-                    <X className="cursor-pointer text-gray-500" onClick={() => setShowEditGroup(false)} />
-                  </div>
-                  <form onSubmit={handleEditGroup} className="space-y-4">
-                    <div>
-                      <label className="text-xs font-bold text-gray-500 block mb-2">GROUP NAME</label>
-                      <input 
-                        className="w-full bg-gray-50 dark:bg-[#1A2126] border border-gray-800 p-3 rounded-lg text-sm"
-                        value={editName}
-                        onChange={(e) => setEditName(e.target.value)}
-                      />
-                    </div>
-                    <div>
-                      <label className="text-xs font-bold text-gray-500 block mb-2">GROUP STATUS</label>
-                      <select 
-                        className="w-full bg-gray-50 dark:bg-[#1A2126] border border-gray-800 p-3 rounded-lg text-sm"
-                        value={editStatus}
-                        onChange={(e) => setEditStatus(e.target.value)}
-                      >
-                        <option value="PENDING">PENDING</option>
-                        <option value="ACTIVE">ACTIVE</option>
-                        <option value="PAUSED">PAUSED</option>
-                        <option value="COMPLETED">COMPLETED</option>
-                      </select>
-                    </div>
-                    <button disabled={formLoading} className="w-full bg-[#FF8C00] text-black font-bold py-3 rounded-lg disabled:opacity-50">
-                      {formLoading ? "Saving..." : "Save Changes"}
-                    </button>
-                  </form>
-                </div>
+      
+      {/* EDIT GROUP MODAL */}
+      {editingGroupId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="bg-white dark:bg-[#11181C] w-full max-w-md rounded-2xl border border-gray-800 p-8 shadow-2xl">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-bold">Edit Group Meta</h2>
+              <X className="cursor-pointer text-gray-500 hover:text-white" onClick={closeEditModal} />
+            </div>
+            <form onSubmit={handleEditGroup} className="space-y-4">
+              <div>
+                <label className="text-xs font-bold text-gray-500 block mb-2">GROUP NAME</label>
+                <input 
+                  className="w-full bg-gray-50 dark:bg-[#1A2126] border border-gray-800 p-3 rounded-lg text-sm text-black dark:text-white outline-none focus:border-[#FF8C00]"
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  required
+                />
               </div>
-            )}
+              <div>
+                <label className="text-xs font-bold text-gray-500 block mb-2">GROUP STATUS</label>
+                <select 
+                  className="w-full bg-gray-50 dark:bg-[#1A2126] border border-gray-800 p-3 rounded-lg text-sm text-black dark:text-white outline-none focus:border-[#FF8C00]"
+                  value={editStatus}
+                  onChange={(e) => setEditStatus(e.target.value)}
+                >
+                  <option value="PENDING">PENDING</option>
+                  <option value="ACTIVE">ACTIVE</option>
+                  <option value="PAUSED">PAUSED</option>
+                  <option value="COMPLETED">COMPLETED</option>
+                </select>
+              </div>
+              <button disabled={formLoading} className="w-full bg-[#FF8C00] text-black font-bold py-3 rounded-lg hover:bg-[#e67e00] transition-colors disabled:opacity-50">
+                {formLoading ? "Saving..." : "Save Changes"}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* HEADER */}
       <div className="flex justify-between items-end mb-8">
         <div>
@@ -174,14 +185,13 @@ export default function GroupsDirectoryPage() {
                   <td className="px-6 py-4 text-gray-600 dark:text-gray-300">{g.nextPayout}</td>
                   <td className="px-6 py-4 text-right">
                     <div className="flex items-center justify-end gap-3">
-                      {/* 👉 THIS LINK TAKES US TO THE DETAILS PAGE! */}
                       <Link href={`/dashboard/groups/${g.id}`}>
                         <Eye className="w-4 h-4 text-gray-400 hover:text-[#FF8C00] cursor-pointer transition-colors" />
                       </Link>
-                      <button onClick={() => setShowEditGroup(true)}>
+                      {/* 👉 FIX: Pass the specific group to the click handler! */}
+                      <button onClick={() => openEditModal(g)}>
                         <Edit2 className="w-4 h-4 text-gray-400 hover:text-[#FF8C00] cursor-pointer transition-colors" />
                       </button>
-                      
                     </div>
                   </td>
                 </tr>
