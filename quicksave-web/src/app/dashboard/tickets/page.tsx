@@ -5,8 +5,7 @@
 "use client";
 
 import { useState, useEffect , useCallback} from "react";
-// import { useSession } from "next-auth/react";
-import { Search, Plus, Ticket, Clock, CheckCircle2, Filter, Download, Eye, CornerUpLeft, X, Loader2 } from "lucide-react";
+import { Search, Plus, Ticket, Clock, CheckCircle2, Download, Eye, CornerUpLeft, X, Loader2 } from "lucide-react";
 import { downloadAdminReport } from "@/src/utils/export";
 import { useRouter } from "next/navigation";
 
@@ -29,57 +28,72 @@ const [stats, setStats] = useState({
   capacity: 0
 });
 
-const fetchStats = async () => {
-  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/tickets/stats`, {
-    headers: { Authorization: `Bearer ${token}` }
-  });
-  const result = await res.json();
-  if (result.success) setStats(result.data);
-};
+  // 1. Fetch Stats (Wrapped safely in useCallback)
+  const fetchStats = useCallback(async () => {
+    if (!token) return;
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/tickets/stats`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const result = await res.json();
+      if (result.success && result.data) {
+        setStats(result.data);
+      }
+    } catch (e) {
+      console.error("Failed to fetch stats", e);
+    }
+  }, [token]);
 
-
- // Inside SupportTicketsPage.tsx
-
-const fetchTickets = useCallback(async () => {
-  setLoading(true);
-  const query = `?q=${search}&category=${category}&priority=${priority}&status=${status}`;
-  
-  try {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/tickets${query}`, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-
-    const result = await res.json();
+  // 2. Fetch Tickets (Wrapped safely in useCallback)
+  const fetchTickets = useCallback(async () => {
+    if (!token) return;
+    setLoading(true);
     
-    // SAFETY CHECK: Ensure result and result.data exist before accessing .tickets
-    if (res.ok && result?.data?.tickets) {
-      setTickets(result.data.tickets);
-      // Optional: Update total pages if you have pagination
-      // setTotalPages(result.data.pages); 
-    } else {
-      console.error("API Error:", result?.message);
-      setTickets([]); // Fallback to empty array to prevent map error
-    }
-  } catch (e) {
-    console.error("Network Error:", e);
-    setTickets([]); 
-  } finally {
-    setLoading(false);
-  }
-}, [token, search, category, priority, status]);
+    // Construct the query string properly
+    const query = new URLSearchParams({
+      q: search,
+      category: category !== "All" ? category : "",
+      priority: priority !== "All" ? priority : "",
+      status: status !== "All" ? status : ""
+    }).toString();
 
-  useEffect(() => {
-  if (token) {
-    fetchStats(); // Fetch stats alongside the ticket list
-  }
-}, [token]);
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/tickets?${query}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
 
-  useEffect(() => {
-    if (token) {
-      const delayDebounce = setTimeout(fetchTickets, 500);
-      return () => clearTimeout(delayDebounce);
+      const result = await res.json();
+      
+      if (res.ok && result?.data?.tickets) {
+        setTickets(result.data.tickets);
+      } else {
+        setTickets([]); 
+      }
+    } catch (e) {
+      console.error("Network Error:", e);
+      setTickets([]); 
+    } finally {
+      setLoading(false);
     }
-  }, [fetchTickets]);
+  }, [token, search, category, priority, status]);
+
+  // 3. The Master Initializer & Debouncer
+  useEffect(() => {
+    if (!token) {
+      router.push("/login");
+      return;
+    }
+
+    // Always fetch stats when the component mounts
+    fetchStats();
+
+    // Debounce the tickets fetch so we don't spam the server while typing!
+    const delayDebounce = setTimeout(() => {
+      fetchTickets();
+    }, 500);
+
+    return () => clearTimeout(delayDebounce);
+  }, [token, router, fetchStats, fetchTickets]); // Safely watches all dependencies!
 
   const handleExport = async () => {
     setIsExporting(true);

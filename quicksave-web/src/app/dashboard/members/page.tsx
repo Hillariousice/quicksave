@@ -4,37 +4,53 @@
 /* eslint-disable react-hooks/static-components */
 "use client";
 
-import { useEffect, useState } from "react";
-// import { useSession } from "next-auth/react";
-import { Search, Download, UserPlus, Filter, MoreVertical, ShieldAlert, Activity, X } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import { Search, Download, UserPlus, MoreVertical, ShieldAlert, Activity, X } from "lucide-react";
 import MemberDetailsModal from "@/src/components/Dashboard/MemberDetailsModal";
 import { downloadCSV } from "@/src/utils/export";
 import { useRouter } from "next/navigation";
 
 export default function MembersDirectoryPage() {
-  // const { data: session } = useSession();
   const router = useRouter();
   const [data, setData] = useState<{ members: any[], stats: any } | null>(null);
   const [selectedMember, setSelectedMember] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("All Statuses");
-  const token = localStorage.getItem("adminAccessToken");
+  const token = typeof window !== "undefined" ? localStorage.getItem("adminAccessToken") : null;
 
-  const fetchMembers = async () => {
-    const query = `?q=${search}&status=${statusFilter}`;
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/members${query}`, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-    const result = await res.json();
-    setData(result.data || []);
-  };
+  // 👉 FIX 1: Wrap fetch in useCallback so it's safe to use as a dependency!
+  const fetchMembers = useCallback(async (currentSearch: string, currentStatus: string) => {
+    if (!token) return;
 
-  useEffect(() => { if (!token) {
+    try {
+      const query = `?q=${encodeURIComponent(currentSearch)}&status=${encodeURIComponent(currentStatus)}`;
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/members${query}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const result = await res.json();
+      setData(result.data || []);
+    } catch (error) {
+      console.error("Failed to fetch members", error);
+    }
+  }, [token]);
+
+  // 👉 FIX 2: Implement Debouncing! 
+  // This waits 500ms after the user STOPS typing before firing the API request.
+  useEffect(() => {
+    if (!token) {
       router.push("/login");
       return;
-    } fetchMembers(); }, [router, search, statusFilter]);
+    }
 
+    const timer = setTimeout(() => {
+      fetchMembers(search, statusFilter);
+    }, 500);
+
+    // Cleanup the timer if the user types another letter before 500ms passes!
+    return () => clearTimeout(timer);
+  }, [token, router, search, statusFilter, fetchMembers]);
+  
 
   const StatCard = ({ title, value, sub, isPositive }: any) => (
     <div className="bg-white dark:bg-[#11181C] p-6 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm transition-colors">

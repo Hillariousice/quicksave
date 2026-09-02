@@ -2,33 +2,38 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
-import { useEffect, useState } from "react";
-// import { useSession } from "next-auth/react";
-import { Wallet, Clock, Calendar, Download, CheckCircle2, AlertTriangle, Eye, X, Activity } from "lucide-react";
+import { useEffect, useState, useCallback } from "react";
+import { Wallet, Calendar, Download, AlertTriangle, Eye, X } from "lucide-react";
 import { downloadAdminReport } from "@/src/utils/export";
-import { useRouter } from "next/router";
+import { useRouter } from "next/navigation";
 
 export default function PayoutsPage() {
   const router = useRouter();
   const [data, setData] = useState<any>(null);
   const [isModalOpen, setIsModalOpen] = useState(false); // FOR NEW PAYOUT
   const [isExporting, setIsExporting] = useState(false);
-  const token = localStorage.getItem("adminAccessToken");
-  const fetchPayouts = async () => {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/payouts`, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-    const result = await res.json();
-    if (result.success) setData(result.data);
-  };
+  const token = typeof window !== "undefined" ? localStorage.getItem("adminAccessToken") : null;
+
+  //  Wrapped in useCallback to satisfy strict linting rules
+  const fetchPayouts = useCallback(async () => {
+    if (!token) {
+      router.push('/login');
+      return;
+    }
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/payouts`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const result = await res.json();
+      if (result.success) setData(result.data);
+    } catch (error) {
+      console.error("Failed to fetch payouts", error);
+    }
+  }, [token, router]);
 
   useEffect(() => {
-    if (token)
-      { 
-        fetchPayouts()
-
-      };
-  }, [token]);
+    fetchPayouts();
+  }, [fetchPayouts]);
 
   const handlePayoutExport = async () => {
     setIsExporting(true);

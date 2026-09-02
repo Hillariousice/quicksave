@@ -1,15 +1,13 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { useEffect, useState } from "react";
-// import { useSession } from "next-auth/react";
+import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft, Edit2, UserPlus, CheckCircle2, XCircle, Clock, View, X } from "lucide-react";
 
 export default function GroupAnalyticsPage() {
   const { id } = useParams();
   const router = useRouter();
-  // const { data: session } = useSession();
   const [data, setData] = useState<any>(null);
   const [memberEmail, setMemberEmail] = useState("");
   const [editName, setEditName] = useState("");
@@ -17,15 +15,15 @@ export default function GroupAnalyticsPage() {
   const [showAddMember, setShowAddMember] = useState(false);
   const [showEditGroup, setShowEditGroup] = useState(false);
   const [formLoading, setFormLoading] = useState(false);
-  const token = localStorage.getItem("adminAccessToken");
-const fetchDetails = () => {
+ const token = typeof window !== "undefined" ? localStorage.getItem("adminAccessToken") : null;
 
-     
-      if (!token) {
-        router.push("/login");
-        return;
-      }
-    // 👉 FIX: Added (session as any)
+  // 👉 FIX 2: Wrap fetchDetails in useCallback so React knows it's safe to use as a dependency
+  const fetchDetails = useCallback(() => {
+    if (!token) {
+      router.push("/login");
+      return;
+    }
+
     fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/groups/${id}`, {
       headers: { Authorization: `Bearer ${token}` }
     })
@@ -34,35 +32,39 @@ const fetchDetails = () => {
       setData(result.data);
       setEditName(result.data.name);
       setEditStatus(result.data.status);
-    });
-  };
+    })
+    .catch(console.error);
+  }, [id, token, router]);
 
+  // 👉 FIX 3: Run the fetch when the component mounts
   useEffect(() => {
+    if (token) {
+      fetchDetails();
+    }
+  }, [fetchDetails, token]);
 
-    // 👉 FIX: Added (session as any)
-    if (token) fetchDetails();
-  }, [id]);
-
-   const handleAddMember = async (e: React.FormEvent) => {
+  const handleAddMember = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormLoading(true);
 
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/groups/${id}/members`, {
         method: 'POST',
-        // 👉 FIX: Added (session as any)
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ email: memberEmail })
       });
       const result = await res.json();
+      
       if (res.ok) {
         alert("Member added successfully");
         setShowAddMember(false);
-        fetchDetails();
+        fetchDetails(); // Refresh the page data!
       } else {
-        alert(result.message);
+        alert(result.message || "Failed to add member");
       }
-    } finally { setFormLoading(false); }
+    } finally { 
+      setFormLoading(false); 
+    }
   };
 
   const handleEditGroup = async (e: React.FormEvent) => {
@@ -72,16 +74,25 @@ const fetchDetails = () => {
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/groups/${id}`, {
         method: 'PATCH',
-        // 👉 FIX: Added (session as any)
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ name: editName, status: editStatus })
       });
+      
       if (res.ok) {
         setShowEditGroup(false);
-        fetchDetails();
+        fetchDetails(); // Refresh the page data!
+      } else {
+        const result = await res.json();
+        alert(result.message || "Failed to update group");
       }
-    } finally { setFormLoading(false); }
+    } catch (err) {
+      console.error(err);
+      alert("Network Error");
+    } finally { 
+      setFormLoading(false); 
+    }
   };
+
 
   if (!data) return <div className="p-8 text-[#FF8C00] font-bold">Loading Analytics...</div>;
 
