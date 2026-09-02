@@ -12,7 +12,6 @@ import {
   Send, Settings, Shield, Ticket, LogOut, HelpCircle, 
   X
 } from "lucide-react";
-// import router from "next/router";
 import Image from "next/image";
 import { useEffect, useState } from "react";
 const navItems = [

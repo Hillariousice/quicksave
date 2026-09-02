@@ -8,7 +8,7 @@ import {
   Activity, Loader2, Download, Info 
 } from "lucide-react";
 import { downloadAdminReport } from "@/src/utils/export";
-import { useRouter } from "next/router";
+import { useRouter } from "next/navigation";
 
 export default function FullSettingsPage() {
   const router = useRouter();
