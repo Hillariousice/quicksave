@@ -53,8 +53,8 @@ const envSchema = z.object({
   FCM_SERVER_KEY: z.string().optional(),
 
   // Quidax
-  // QUIDAX_BASE_URL: z.string({ message: "QUIDAX_BASE_URL is required" }),
-  // QUIDAX_API_KEY: z.string({ message: "QUIDAX_API_KEY is required" }),
+  QUIDAX_SECRET_KEY: z.string({ message: "QUIDAX_SECRET_KEY is required" }),
+  QUIDAX_WEBHOOK_SECRET: z.string({ message: "QUIDAX_WEBHOOK_SECRET is required" }),
   // QUIDAX_PARTNER_ID: z.string({ message: "QUIDAX_PARTNER_ID is required" }),
   // QUIDAX_PARTNER_SECRET: z.string({ message: "QUIDAX_PARTNER_SECRET is required" }),
 

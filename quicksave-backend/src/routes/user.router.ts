@@ -1,5 +1,5 @@
 import { requireAuth } from '../middleware/auth';
-import { updateProfile, addBankAccount, getUserStats, getBankAccounts, updatePushToken, getAvailableBanks, verifyUserBvn } from '../controllers/user/user.controller'
+import { updateProfile, addBankAccount, getUserStats, getBankAccounts, updatePushToken, getAvailableBanks, verifyUserBvn, verifyKycWithPaystack } from '../controllers/user/user.controller'
 import { Router } from 'express';
 
 const router = Router();

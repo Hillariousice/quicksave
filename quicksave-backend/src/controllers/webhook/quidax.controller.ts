@@ -2,7 +2,6 @@ import { Request, Response } from 'express';
 import crypto from 'crypto';
 import { env } from '../../config/env';
 import { logger } from '../../config/logger';
-import { walletService } from '../wallet/wallet.service';
 import prisma from '../../config/database';
 
 export const quidaxWebhook = async (req: Request, res: Response) => {

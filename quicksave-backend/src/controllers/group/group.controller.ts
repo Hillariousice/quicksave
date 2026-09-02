@@ -414,7 +414,11 @@ export const makeContribution = catchAsync(async (req: Request, res: Response) =
     // C. Re-read the wallet to get the absolutely latest, locked balance
     const safeWallet = await tx.wallet.findUnique({ where: { id: userWalletBase.id } });
     const targetBalanceColumn = currency === 'USDT' ? 'balanceUSDT' : 'balanceNGN';
-    
+   
+    if (!safeWallet) {
+   throw new AppError('Wallet not found', 404);
+}
+
     // D. Safe Balance Check
     if (safeWallet[targetBalanceColumn] < amountToPay) {
       throw new AppError(`Insufficient ${currency} funds. Please fund your wallet with at least ₦${amountToPay}`, 400);
