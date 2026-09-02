@@ -6,7 +6,7 @@ import { walletService } from '../../services/wallet.service';
 import { paystack } from '../../utils/paystack';
 import { AppError } from '../../utils/AppError';
 import { withdrawalQueue } from '../../queues/withdrawal.queue';
-import { quidaxApi } from '../.../../utils/quidax
+import { quidaxApi } from '../../utils/quidax';
 
 export const getMyWallet = catchAsync(async (req: Request, res: Response) => {
   const userId = req.user.id;
