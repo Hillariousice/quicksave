@@ -95,39 +95,36 @@ function RootNavigator() {
 
   // 2. Handle Routing and Splash Screen hiding
 
-  useEffect(() => {
-    // Wait until both Auth and Onboarding checks are done
-    if (isBooting || isFirstTime === null) return;
+useEffect(() => {
+  if (isBooting || isFirstTime === null) return;
 
-    const inAuthGroup = segments[0] === 'auth';
-    const isRoot = segments.length === 0 || segments[0] === undefined || segments[0] === '';
+  const inAuthGroup = segments[0] === 'auth';
+  const isRoot = segments.length === 0 || segments[0] === undefined || segments[0] === '';
 
-    // Hide Splash Screen
-     SplashScreen.hideAsync().catch(() => {});
+  SplashScreen.hideAsync().catch(() => {});
 
-    if (isAuthenticated) {
-      // 1. If logged in, always go to tabs
-      if (inAuthGroup || isRoot) {
-        router.replace('/(tabs)');
+  if (isAuthenticated) {
+    if (inAuthGroup || isRoot) {
+      router.replace('/(tabs)');
+    }
+  } else {
+    if (isFirstTime) {
+      // FIX: Only redirect to root if they are NOT already trying to go to an auth screen
+      // This allows the "Get Started" button to work.
+      if (!isRoot && !inAuthGroup) {
+        router.replace('/');
       }
     } else {
-      // 2. If NOT logged in...
-      if (isFirstTime) {
-        // ...and first time user, keep them on onboarding (index)
-        if (!isRoot) router.replace('/');
-      } else {
-        // ...and NOT first time, force them to login
-        if (!inAuthGroup) {
-          router.replace('/auth/login');
-        }
+      if (!inAuthGroup) {
+        router.replace('/auth/login');
       }
     }
-  }, [isAuthenticated, isBooting, isFirstTime, segments]);
-
+  }
+}, [isAuthenticated, isBooting, isFirstTime, segments]);
   // Return null or a blank view while loading so we don't flash the wrong screen
   // if (isLoading) return null;
 
-  if (isBooting || isFirstTime === null) return null;
+  // if (isBooting || isFirstTime === null) return null;
 
   return (
     <Stack
