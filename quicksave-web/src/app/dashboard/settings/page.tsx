@@ -92,7 +92,7 @@ export default function FullSettingsPage() {
           <p className="text-gray-500 text-sm">Global configurations for QuickSave operations.</p>
         </div>
         <button 
-          onClick={() => downloadAdminReport('/admin/transactions/export', token, 'System_Config.csv')}
+          onClick={() => downloadAdminReport('/admin/transactions/export', token as string, 'System_Config.csv')}
           className="flex items-center gap-2 bg-white dark:bg-[#11181C] border border-gray-200 dark:border-gray-800 px-4 py-2 rounded-lg text-sm font-bold text-gray-700 dark:text-gray-300"
         >
           <Download className="w-4 h-4" /> Export Config
