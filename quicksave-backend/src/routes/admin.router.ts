@@ -38,7 +38,7 @@ router.patch('/members/:id/promote', (req, res, next) => {
 
 router.post('/groups/:id/members', requireAuth, requireAdmin, addMemberToGroupAdmin);
 router.patch('/groups/:id', requireAuth, requireAdmin, updateGroupAdmin);
-router.get('/transactions', getAdminTransactions);
+router.get('/admin-transactions', getAdminTransactions);
 router.get('/support-tickets', getAdminTickets);
 router.get('/settings', getPlatformSettings);
 router.patch('/settings/config', requireAuth, requireAdmin, updatePlatformConfig);
