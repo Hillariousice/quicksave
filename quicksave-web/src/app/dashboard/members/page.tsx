@@ -79,7 +79,7 @@ export default function MembersDirectoryPage() {
       )}
       {/* MODAL MOUNT */}
       {selectedMember && (
-        <MemberDetailsModal memberId={selectedMember} token={session?.accessToken} onClose={() => setSelectedMember(null)} />
+        <MemberDetailsModal memberId={selectedMember} token={token} onClose={() => setSelectedMember(null)} />
       )}
 
       {/* HEADER */}
