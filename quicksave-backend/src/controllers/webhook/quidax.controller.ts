@@ -24,7 +24,7 @@ export const quidaxWebhook = async (req: Request, res: Response) => {
   try {
     // Quidax sends 'deposit.successful' when crypto is confirmed on the blockchain
     if (event.event === 'deposit.successful') {
-      const { amount, currency, txid, payment_address } = event.data;
+      const { amount, currency, txid, payment_address } = event.data as any;
 
       // 3. Ensure it is USDT
       if (currency !== 'usdt') return;
