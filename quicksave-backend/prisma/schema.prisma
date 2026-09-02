@@ -45,6 +45,8 @@ enum TransactionType {
   PAYOUT
   REFUND
   FEE
+  FUNDING
+  SWAP 
 }
 
 enum TransactionStatus {
@@ -91,6 +93,12 @@ enum Currency {
   BTC  
 }
 
+enum KycTier {
+  TIER_0 // Unverified (Can look around, cannot fund wallet)
+  TIER_1 // BVN Verified (Can fund up to ₦50,000 daily)
+  TIER_2 // ID Card + Liveness Selfie Verified (Unlimited Ajo)
+}
+
 enum SystemRole {
   USER
   ADMIN
@@ -113,7 +121,10 @@ model User {
   isVerified    Boolean     @default(false)
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
-
+  kycTier   KycTier @default(TIER_0)
+  bvn       String? @unique // Hashed or encrypted in production!
+  idUrl     String? 
+  
   // Relations
   groupsCreated  Group[]         @relation("GroupCreator")
   memberships    GroupMember[]
@@ -214,6 +225,7 @@ model Wallet {
   balanceNGN Float   @default(0)
   balanceUSD Float   @default(0)
   balanceUSDT Float  @default(0) 
+  usdtAddress    String?  @unique 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }

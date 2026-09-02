@@ -73,7 +73,7 @@
         {
           "url": "https://sentry.io/",
           "project": "react-native",
-          "organization": "quicksave"
+          "organization": "quicksave-5x"
         }
       ],
       "@sentry/react-native"

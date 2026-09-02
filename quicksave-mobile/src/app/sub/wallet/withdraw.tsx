@@ -6,7 +6,8 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { FontAwesome5, Feather, MaterialCommunityIcons } from '@expo/vector-icons';
-
+import * as SecureStore from 'expo-secure-store';
+import { promptBiometrics } from '@/utils/biometrics';
 import { Colors } from '@/theme/Colors';
 import { api } from '@/api/client';
 import { useAppDispatch, useAppSelector } from '@/store';
@@ -59,7 +60,7 @@ export default function WithdrawScreen() {
     if (maxWithdrawal > 0) setAmount(maxWithdrawal.toString());
   };
 
-  const handleWithdraw = async () => {
+const handleWithdraw = async () => {
     const numericAmount = Number(amount);
     
     if (!bankAccount) {
@@ -73,6 +74,13 @@ export default function WithdrawScreen() {
     if (numericAmount + PROCESSING_FEE > walletBalance) {
       Alert.alert("Insufficient Funds", "You don't have enough balance to cover the amount and fee.");
       return;
+    }
+
+    // Biometric Check before moving money!
+    const biometricsEnabled = await SecureStore.getItemAsync('biometricsEnabled');
+    if (biometricsEnabled === 'true') {
+      const authSuccess = await promptBiometrics('Verify identity to authorize withdrawal');
+      if (!authSuccess) return; 
     }
 
     setLoading(true);

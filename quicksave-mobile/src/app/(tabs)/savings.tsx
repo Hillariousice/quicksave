@@ -4,17 +4,16 @@ import {
   TouchableOpacity, ActivityIndicator, useColorScheme 
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { FontAwesome5, Feather, MaterialCommunityIcons } from '@expo/vector-icons';
+import { FontAwesome5, Feather } from '@expo/vector-icons';
 
 import { Colors } from '@/theme/Colors';
-import { api } from '@/api/client';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { fetchWalletData } from '@/store/slices/walletSlice';
-
+import { useKycGuard } from '@/hooks/use-kyc-guard';
 
 export default function WalletDashboardScreen() {
   const router = useRouter();
-  
+  const { withKyc } = useKycGuard(); 
   // 👉 Dynamic Light/Dark Mode
   const colorScheme = useColorScheme();
   const theme = colorScheme === 'dark' ? Colors.dark : Colors.light;
@@ -26,8 +25,8 @@ export default function WalletDashboardScreen() {
   const { isConnected, isInternetReachable } = useAppSelector((state) => state.network);
   const isOffline = isConnected === false || isInternetReachable === false;
   const [showBalance, setShowBalance] = useState(true);
-  const [loading, setLoading] = useState(true);
-  
+  // const [loading, setLoading] = useState(true);
+  const [activeCurrency, setActiveCurrency] = useState<'NGN' | 'USDT'>('NGN');
   // const [wallet, setWallet] = useState<any>(null);
   // const [transactions, setTransactions] = useState<any[]>([]);
 
@@ -40,12 +39,21 @@ export default function WalletDashboardScreen() {
     return new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN' }).format(amount).replace('.00', '');
   };
 
+   const getDisplayBalance = () => {
+    if (!balance) return '0.00';
+    if (activeCurrency === 'USDT') {
+      return `₮${balance.balanceUSDT.toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
+    }
+    return `₦${balance.balanceNGN.toLocaleString()}`;
+  };
+
   const getTransactionIcon = (type: string) => {
     switch (type) {
       case 'CONTRIBUTION': return { icon: 'users', bg: theme.inputBg, color: theme.textSecondary };
       case 'FUNDING': return { icon: 'wallet', bg: theme.inputBg, color: theme.textSecondary };
       case 'PAYOUT': return { icon: 'money-bill-wave', bg: theme.inputBg, color: theme.textSecondary };
       case 'WITHDRAWAL': return { icon: 'university', bg: theme.inputBg, color: theme.textSecondary };
+      case 'SWAP': return { icon: 'refresh-cw', bg: theme.inputBg, color: theme.textSecondary };
       default: return { icon: 'exchange-alt', bg: theme.inputBg, color: theme.textSecondary };
     }
   };
@@ -80,20 +88,32 @@ export default function WalletDashboardScreen() {
         <View style={[styles.balanceCard, { backgroundColor: colorScheme === 'dark' ? '#1A1A1A' : '#F9FAFB', borderColor: theme.inputBorder, borderWidth: colorScheme === 'light' ? 1 : 0 }]}>
           <View style={styles.balanceHeader}>
             <Text style={styles.balanceLabel}>TOTAL BALANCE</Text>
-            <TouchableOpacity onPress={() => setShowBalance(!showBalance)}>
-              <Feather name={showBalance ? "eye" : "eye-off"} size={18} color="#9BA1A6" />
-            </TouchableOpacity>
+            <View style={{ flexDirection: 'row', backgroundColor: theme.background, borderRadius: 16, padding: 4 }}>
+              <TouchableOpacity 
+                onPress={() => setActiveCurrency('NGN')}
+                style={{ paddingHorizontal: 12, paddingVertical: 4, borderRadius: 12, backgroundColor: activeCurrency === 'NGN' ? theme.primary : 'transparent' }}
+              >
+                <Text style={{ fontSize: 10, fontWeight: 'bold', color: activeCurrency === 'NGN' ? '#111' : theme.textSecondary }}>NGN</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                onPress={() => setActiveCurrency('USDT')}
+                style={{ paddingHorizontal: 12, paddingVertical: 4, borderRadius: 12, backgroundColor: activeCurrency === 'USDT' ? theme.primary : 'transparent' }}
+              >
+                <Text style={{ fontSize: 10, fontWeight: 'bold', color: activeCurrency === 'USDT' ? '#111' : theme.textSecondary }}>USDT</Text>
+              </TouchableOpacity>
+            </View>
           </View>
+
           
-          <Text style={[styles.balanceAmount, { color: theme.text }]}>
-            {showBalance ? formatCurrency(balance || 0) : '₦ ••••••'}
-          </Text>
+          {/* <Text style={[styles.balanceAmount, { color: theme.text }]}>
+            {showBalance ? getDisplayBalance() : '••••••'}
+          </Text> */}
 
           <View style={styles.subBalanceRow}>
             <View>
               <Text style={styles.subBalanceLabel}>Available Balance</Text>
               <Text style={[styles.subBalanceValue, { color: theme.text }]}>
-                {showBalance ? formatCurrency(balance || 0) : '••••••'}
+                 {showBalance ? getDisplayBalance() : '••••••'}
               </Text>
             </View>
             <View>
@@ -107,7 +127,7 @@ export default function WalletDashboardScreen() {
         <View style={styles.actionRow}>
           <TouchableOpacity 
             style={[styles.primaryAction, { backgroundColor: theme.primary }]}
-            onPress={() => router.push('/sub/wallet/fund')} // 👉 Routes to Fund Wallet!
+            onPress={() => withKyc(router.push('/sub/wallet/fund'))} // 👉 Routes to Fund Wallet!
           >
             <Feather name="plus" size={18} color="#111" />
             <Text style={styles.primaryActionText}>Fund Wallet</Text>
@@ -124,11 +144,17 @@ export default function WalletDashboardScreen() {
         alert("Withdrawals require an active internet connection.");
         return;
       }
-      router.push('/sub/wallet/withdraw');
-    }}
-          >
+      withKyc(router.push('/sub/wallet/withdraw'))
+    }}>
             <Feather name="arrow-up" size={18} color={theme.text} />
             <Text style={[styles.secondaryActionText, { color: theme.text }]}>Withdraw</Text>
+          </TouchableOpacity>
+           <TouchableOpacity 
+            style={[styles.primaryAction, { backgroundColor: theme.primary }]}
+            onPress={() => withKyc(router.push('/sub/wallet/swap'))} // 👉 Routes to Swap Wallet!
+          >
+            <Feather name="refresh-cw" size={18} color="#111" />
+            <Text style={styles.primaryActionText}>Swap</Text>
           </TouchableOpacity>
         </View>
 

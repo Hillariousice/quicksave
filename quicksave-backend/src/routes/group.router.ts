@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { requireAuth } from '../middleware/auth';
 import { validate } from '../middleware/validate';
+import { requireKycTier1 } from '../middleware/requireKycTier1';
 import { createGroupSchema, generateRotationSchema, getGroupSchema, groupParamsSchema, joinGroupSchema, updateStatusSchema } from '../modules/group/group.schema';
 import { createGroup, joinGroup, getGroupDetails, getGroupMembers, generateRotation, getRotationSchedule, getActivityFeed, updateGroupStatus, makeContribution, triggerPayout,inviteMembers, getMyGroups, syncOfflineContributions } from '../controllers/group/group.controller';
 import { searchUsers } from '../controllers/user/user.controller';
@@ -14,7 +15,7 @@ router.use(requireAuth);
 // POST /api/v1/groups
 router.get('/', getMyGroups);
 router.post('/', validate(createGroupSchema), createGroup);
-router.post('/join', validate(joinGroupSchema), joinGroup);
+router.post('/join', requireKycTier1, validate(joinGroupSchema), joinGroup);
 router.get('/:id', validate(getGroupSchema), getGroupDetails)
 router.get('/:groupId/members', getGroupMembers);
 

@@ -6,7 +6,7 @@ import { walletService } from '../../services/wallet.service';
 import { paystack } from '../../utils/paystack';
 import { AppError } from '../../utils/AppError';
 import { withdrawalQueue } from '../../queues/withdrawal.queue';
-
+import { quidaxApi } from '../.../../utils/quidax
 
 export const getMyWallet = catchAsync(async (req: Request, res: Response) => {
   const userId = req.user.id;
@@ -128,4 +128,63 @@ export const getTransactionDetails = catchAsync(async (req: Request, res: Respon
   }
 
   return sendSuccess(res, transaction, 'Transaction details retrieved', 200);
+});
+
+
+export const getCryptoAddress = catchAsync(async (req: Request, res: Response) => {
+  const userId = req.user.id;
+  let wallet = await prisma.wallet.findUnique({ where: { userId } });
+
+  if (!wallet) throw new AppError('Wallet not found', 404);
+
+  if (!wallet.usdtAddress) {
+    // Generate a new one via Quidax
+    const newAddress = await quidaxApi.generateDepositAddress(userId);
+    wallet = await prisma.wallet.update({
+      where: { userId },
+      data: { usdtAddress: newAddress }
+    });
+  }
+
+  return sendSuccess(res, { address: wallet.usdtAddress, network: 'TRC-20' }, 'Address retrieved', 200);
+});
+
+// 👉 Instant NGN to USDT Swap
+export const swapCurrency = catchAsync(async (req: Request, res: Response) => {
+  const { amountNGN } = req.body;
+  const userId = req.user.id;
+
+  const wallet = await prisma.wallet.findUnique({ where: { userId } });
+  if (!wallet || wallet.balanceNGN < amountNGN) {
+    throw new AppError('Insufficient NGN balance', 400);
+  }
+
+  const exchangeRate = await quidaxApi.getExchangeRate();
+  const amountUSDT = amountNGN / exchangeRate; // e.g., 160,000 / 1600 = 100 USDT
+
+  // Atomic Swap Transaction!
+  const result = await prisma.$transaction(async (tx) => {
+    const updatedWallet = await tx.wallet.update({
+      where: { id: wallet.id },
+      data: {
+        balanceNGN: { decrement: amountNGN },
+        balanceUSDT: { increment: amountUSDT }
+      }
+    });
+
+    await tx.transaction.create({
+      data: {
+        walletId: wallet.id,
+        amount: amountUSDT,
+        type: 'SWAP',
+        status: 'SUCCESS',
+        reference: `SWAP_${Date.now()}`,
+        description: `Swapped ₦${amountNGN} for ₮${amountUSDT.toFixed(2)}`
+      }
+    });
+
+    return updatedWallet;
+  });
+
+  return sendSuccess(res, { balanceNGN: result.balanceNGN, balanceUSDT: result.balanceUSDT }, 'Swap successful', 200);
 });

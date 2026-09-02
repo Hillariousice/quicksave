@@ -1,5 +1,5 @@
 import { requireAuth } from '../middleware/auth';
-import { updateProfile, addBankAccount, getUserStats, getBankAccounts, updatePushToken, getAvailableBanks } from '../controllers/user/user.controller'
+import { updateProfile, addBankAccount, getUserStats, getBankAccounts, updatePushToken, getAvailableBanks, verifyUserBvn } from '../controllers/user/user.controller'
 import { Router } from 'express';
 
 const router = Router();
@@ -13,6 +13,7 @@ router.post('/bank', addBankAccount);
 router.patch('/push-token', updatePushToken);
 
 router.get('/banks/available', getAvailableBanks);
-
+router.post('/verify-bvn', verifyUserBvn)
+router.post('/verify-kyc', requireAuth, verifyKycWithPaystack);
 
 export default router

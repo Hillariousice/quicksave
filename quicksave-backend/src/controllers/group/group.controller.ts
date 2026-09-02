@@ -25,6 +25,7 @@ export const createGroup = catchAsync(async (req: Request, res: Response) => {
       creatorId: userId,
       maxCapacity,
       inviteCode,
+      currency: req.body.currency || 'NGN',
       // 1. Add the creator as the group ADMIN automatically
       members: {
         create: {
@@ -39,6 +40,7 @@ export const createGroup = catchAsync(async (req: Request, res: Response) => {
       wallet: {
         create: {
           balance: 0,
+          currency: req.body.currency || 'NGN'
         },
       },
     },
@@ -395,6 +397,7 @@ export const makeContribution = catchAsync(async (req: Request, res: Response) =
     throw new AppError('You must be a member of this group to contribute', 403);
   }
 
+  const currency = group.currency;
   const amountToPay = group.contributionAmount;
   const reference = `CONT_${crypto.randomBytes(6).toString('hex').toUpperCase()}`;
 
@@ -410,16 +413,17 @@ export const makeContribution = catchAsync(async (req: Request, res: Response) =
 
     // C. Re-read the wallet to get the absolutely latest, locked balance
     const safeWallet = await tx.wallet.findUnique({ where: { id: userWalletBase.id } });
-
+    const targetBalanceColumn = currency === 'USDT' ? 'balanceUSDT' : 'balanceNGN';
+    
     // D. Safe Balance Check
-    if (safeWallet!.balance < amountToPay) {
-      throw new AppError(`Insufficient funds. Please fund your wallet with at least ₦${amountToPay}`, 400);
+    if (safeWallet[targetBalanceColumn] < amountToPay) {
+      throw new AppError(`Insufficient ${currency} funds. Please fund your wallet with at least ₦${amountToPay}`, 400);
     }
 
     // E. Deduct from User
     await tx.wallet.update({
       where: { id: safeWallet!.id },
-      data: { balance: { decrement: amountToPay } },
+      data: { [targetBalanceColumn]: { decrement: amountToPay } },
     });
 
     // F. Record User Debit
@@ -437,7 +441,7 @@ export const makeContribution = catchAsync(async (req: Request, res: Response) =
     // G. Add to Group Vault
     await tx.wallet.update({
       where: { id: group.wallet!.id },
-      data: { balance: { increment: amountToPay } },
+      data: { [targetBalanceColumn]: { increment: amountToPay } },
     });
 
     const txUser = await tx.user.findUnique({ where: { id: userId }});

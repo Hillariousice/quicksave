@@ -24,5 +24,9 @@ export const UserService = {
   getAvailableBanks: async () => {
     const res = await api.get('/users/banks/available');
     return res.data.data;
-  }
+  },
+  verifyKyc: async (data: { accountNumber: string, bankCode: string }) => {
+    const res = await api.post('/users/verify-kyc', data);
+    return res.data;
+  },
 };

@@ -140,6 +140,13 @@ function RootNavigator() {
       <Stack.Screen name="auth/biometrics" />
       <Stack.Screen name="(tabs)" options={{ navigationBarHidden: true }} />
       <Stack.Screen name="sub" />
+       <Stack.Screen 
+      name="kyc/bvn-setup" 
+      options={{ 
+        presentation: 'modal', // Tells iOS/Android to slide it up from the bottom!
+        headerShown: false 
+      }} 
+    />
     </Stack>
   );
 }

@@ -35,7 +35,7 @@ export default function CreateGroupScreen() {
   const [frequency, setFrequency] = useState<'DAILY' | 'WEEKLY' | 'MONTHLY'>('WEEKLY');
   const [slots, setSlots] = useState<number>(10);
   const [rotationMode, setRotationMode] = useState<'RANDOM' | 'JOIN_ORDER'>('RANDOM');
-
+  const [groupCurrency, setGroupCurrency] = useState<'NGN' | 'USDT'>('NGN');
   // Date Picker State
   const [startDate, setStartDate] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
@@ -62,6 +62,9 @@ export default function CreateGroupScreen() {
         contributionAmount: Number(amount),
         frequency,
         maxCapacity: slots,
+        mode: rotationMode,
+        startDate: startDate.toISOString(),
+        currency: groupCurrency
       });
       dispatch(fetchMyGroups()); // Refresh the list
       router.replace('/(tabs)/groups');
@@ -144,6 +147,23 @@ export default function CreateGroupScreen() {
             />
           </View>
         </View>
+         <View style={styles.inputGroup}>
+    <Text style={[styles.label, { color: theme.textSecondary }]}>VAULT CURRENCY</Text>
+    <View style={styles.pillContainer}>
+      <TouchableOpacity 
+        style={[styles.pill, groupCurrency === 'NGN' && { backgroundColor: theme.primary }]}
+        onPress={() => setGroupCurrency('NGN')}
+      >
+        <Text>Naira (NGN)</Text>
+      </TouchableOpacity>
+      <TouchableOpacity 
+        style={[styles.pill, groupCurrency === 'USDT' && { backgroundColor: theme.primary }]}
+        onPress={() => setGroupCurrency('USDT')}
+      >
+        <Text>Digital Dollar (USDT)</Text>
+      </TouchableOpacity>
+    </View>
+  </View>
         {/* CONTRIBUTION AMOUNT */}
         <View style={styles.inputGroup}>
           <Text style={[styles.label, { color: theme.textSecondary }]}>CONTRIBUTION AMOUNT</Text>

@@ -38,6 +38,20 @@ export const verifyOtpAction = createAsyncThunk(
   },
 );
 
+export const setCredentials = createAsyncThunk(
+  'auth/setCrediental',
+  async ({user, tokens}: {user: any, tokens?: {accessToken: string, refreshToken: string}}, { rejectWithValue }) => {
+    try {
+      if (tokens) {
+        await SecureStore.setItemAsync('accessToken', tokens.accessToken);
+        await SecureStore.setItemAsync('refreshToken', tokens.refreshToken);
+      }
+      return user;
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || 'Crediental set failed');
+    }
+  }
+)
 // Async Thunk to restore session on app boot
 export const restoreSession = createAsyncThunk(
   'auth/restoreSession',

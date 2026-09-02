@@ -64,10 +64,17 @@ SMTP_HOST: z.string({ message: "SMTP_HOST is required" }),
 
 });
 
+ const SmileIDConfigSchema = z.object({
+  SMILE_ID_BASE_URL: z.string({ message: "SMILE_ID_BASE_URL is required" }),
+  SMILE_ID_API_KEY: z.string({ message: "SMILE_ID_API_KEY is required" }),
+  SMILE_ID_PARTNER_ID: z.string({ message: "SMILE_ID_PARTNER_ID is required" }),
+  SMILE_ID_PARTNER_SECRET: z.string({ message: "SMILE_ID_PARTNER_SECRET is required" }),
+});
+
 
 // Parse and validate — throws a detailed error if anything is wrong
 const _parsed = envSchema.safeParse(process.env);
-
+const _smileParsed = SmileIDConfigSchema.safeParse(process.env);
 if (!_parsed.success) {
   console.error("❌ Invalid environment variables:");
   // Format and log the specific errors from Zod nicely
@@ -78,4 +85,4 @@ if (!_parsed.success) {
 }
 
 // Export the validated, typed variables!
-export const env = _parsed.data;
+export const env = _parsed.data && _smileParsed.data;

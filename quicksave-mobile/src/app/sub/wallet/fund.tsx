@@ -16,11 +16,12 @@ import {
 import { useRouter } from 'expo-router';
 import { FontAwesome5, Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import * as WebBrowser from 'expo-web-browser';
-
+import * as SecureStore from 'expo-secure-store';
 import { Colors } from '@/theme/Colors';
 import { api } from '@/api/client';
 import { UserService } from '@/api/services/user.service';
 import { WalletService } from '@/api/services/wallet.service';
+import { promptBiometrics } from '@/utils/biometrics';
 
 const QUICK_AMOUNTS = [5000, 10000, 20000, 50000];
 
@@ -59,12 +60,21 @@ export default function FundWalletScreen() {
     return new Intl.NumberFormat('en-NG').format(num);
   };
 
-  const handleFundWallet = async () => {
+ const handleFundWallet = async () => {
     const numericAmount = Number(amount.replace(/[^0-9]/g, ''));
 
     if (numericAmount < 100) {
       Alert.alert('Invalid Amount', 'Minimum funding amount is ₦100');
       return;
+    }
+
+    // Biometric Check before charging their bank!
+    if (paymentMethod === 'BANK') {
+      const biometricsEnabled = await SecureStore.getItemAsync('biometricsEnabled');
+      if (biometricsEnabled === 'true') {
+        const authSuccess = await promptBiometrics(`Authorize ₦${formatCurrency(numericAmount)} transfer`);
+        if (!authSuccess) return; 
+      }
     }
 
     setLoading(true);
@@ -79,8 +89,6 @@ export default function FundWalletScreen() {
         router.back();
       } else {
         // Bank Transfer Flow
-        // Most Nigerian apps show account details for manual transfer or use Paystack "Pay with Bank"
-        // Here we simulate initiating a bank-direct charge or simply providing transfer details
         Alert.alert(
           'Bank Transfer',
           `Please transfer ₦${formatCurrency(numericAmount)} to the virtual account provided in your profile or use the Paystack portal.`,
