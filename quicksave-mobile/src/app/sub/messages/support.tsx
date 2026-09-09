@@ -9,7 +9,7 @@ import { Colors } from '@/theme/Colors';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { fetchMessages, receiveMessage } from '@/store/slices/chatSlice';
 import { io } from 'socket.io-client';
-import { ChatService } from '@/api/services/ChatService';
+import { ChatService } from '@/api/services/chatService';
 import { getDayLabel } from '@/utils/dateHelper';
 
 export default function SupportChatScreen() {

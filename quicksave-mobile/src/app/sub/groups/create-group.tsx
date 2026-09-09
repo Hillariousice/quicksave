@@ -19,7 +19,7 @@ import { Colors } from '@/theme/Colors';
 import { api } from '@/api/client';
 import { useAppDispatch } from '@/store';
 import { fetchMyGroups } from '@/store/slices/groupSlice';
-import { GroupService } from '@/api/services/GroupService';
+import { GroupService } from '@/api/services/groupService';
 
 export default function CreateGroupScreen() {
   const router = useRouter();

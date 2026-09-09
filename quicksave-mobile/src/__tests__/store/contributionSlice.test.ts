@@ -2,7 +2,7 @@ import { configureStore } from '@reduxjs/toolkit';
 import contributionReducer, { submitContribution } from '@/store/slices/contributionSlice';
 import walletReducer from '@/store/slices/walletSlice';
 import groupReducer from '@/store/slices/groupSlice';
-import { GroupService } from '@/api/services/GroupService';
+import { GroupService } from '@/api/services/groupService';
 
 jest.mock('@/services/group.service');
 const mockedGroupService = GroupService as jest.Mocked<typeof GroupService>;

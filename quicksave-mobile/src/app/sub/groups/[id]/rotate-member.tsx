@@ -13,7 +13,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { FontAwesome5, Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 
 import { Colors } from '@/theme/Colors';
-import { GroupService } from '@/api/services/GroupService';
+import { GroupService } from '@/api/services/groupService';
 
 export default function RotationTimelineScreen() {
   const router = useRouter();

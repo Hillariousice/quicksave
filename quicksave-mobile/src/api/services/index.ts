@@ -1,8 +1,8 @@
-export { AuthService } from "./AuthService";
+export { AuthService } from "./authService";
 export { UserService } from "./userService";
-export { GroupService } from "./GroupService";
+export { GroupService } from "./groupService";
 export { NotificationService } from "./notificationService";
-export { socketService } from "./SocketService";
+export { socketService } from "./socketService";
 export { WalletService } from "./walletService";
-export { ChatService } from "./ChatService";
+export { ChatService } from "./chatService";
 

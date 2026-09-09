@@ -5,7 +5,7 @@ import * as Notifications from 'expo-notifications';
 import Constants from 'expo-constants';
 import { useRouter } from 'expo-router';
 import { useAppSelector, useAppDispatch } from '../store';
-import { AuthService } from '@/api/services/AuthService';
+import { AuthService } from '@/api/services/authService';
 import { Colors } from '@/theme/Colors';
 import { fetchWalletData } from '@/store/slices/walletSlice';
 

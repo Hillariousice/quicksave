@@ -4,7 +4,7 @@ import { Provider } from 'react-redux';
 import { configureStore } from '@reduxjs/toolkit';
 import groupReducer from '@/store/slices/groupSlice';
 import { useAjoGroup } from '@/hooks/useAjoGroup';
-import { GroupService } from '@/api/services/GroupService';
+import { GroupService } from '@/api/services/groupService';
 
 jest.mock('@/api/services/group.service');
 const mockedGroupService = GroupService as jest.Mocked<typeof GroupService>;

@@ -8,7 +8,7 @@ import { FontAwesome5, Feather, MaterialIcons } from '@expo/vector-icons';
 import { Colors } from '@/theme/Colors';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { fetchMessages, receiveMessage } from '@/store/slices/chatSlice';
-import { ChatService } from '@/api/services/ChatService';
+import { ChatService } from '@/api/services/chatService';
 import { io } from 'socket.io-client';
 import { getDayLabel } from '@/utils/dateHelper';
 
