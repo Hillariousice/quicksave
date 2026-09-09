@@ -6,13 +6,13 @@ import {
 import { useRouter } from 'expo-router';
 import { FontAwesome5, Feather } from '@expo/vector-icons';
 import { Colors } from '@/theme/Colors';
-import ActionBtn from '@/components/home/action-btn';
-import ActivityItem from '@/components/home/activity-item';
-import { GroupCard } from '@/components/card/group-card';
+import ActionBtn from '@/components/home/ActionBtn';
+import ActivityItem from '@/components/home/ActivityItem';
+import { GroupCard } from '@/components/card/GroupCard';
 import { useAppSelector, useAppDispatch } from '@/store';
 import { fetchWalletData } from '@/store/slices/walletSlice';
 import { fetchMyGroups } from '@/store/slices/groupSlice';
-import CachedAvatar from '@/components/ui/cached-avatar';
+import CachedAvatar from '@/components/ui/CachedAvatar';
 
 export default function HomeScreen() {
   const router = useRouter();

@@ -12,8 +12,8 @@ import { Colors } from '@/theme/Colors';
 import { api } from '@/api/client';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { fetchWalletData } from '@/store/slices/walletSlice';
-import { WalletService } from '@/api/services/wallet.service';
-import { UserService } from '@/api/services/user.service';
+import { WalletService } from '@/api/services/walletService';
+import { UserService } from '@/api/services/userService';
 
 export default function WithdrawScreen() {
   const router = useRouter();

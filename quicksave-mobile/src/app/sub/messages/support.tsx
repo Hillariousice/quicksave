@@ -9,8 +9,8 @@ import { Colors } from '@/theme/Colors';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { fetchMessages, receiveMessage } from '@/store/slices/chatSlice';
 import { io } from 'socket.io-client';
-import { ChatService } from '@/api/services/chat.service';
-import { getDayLabel } from '@/utils/date-helper';
+import { ChatService } from '@/api/services/ChatService';
+import { getDayLabel } from '@/utils/dateHelper';
 
 export default function SupportChatScreen() {
   const router = useRouter();

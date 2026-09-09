@@ -3,8 +3,8 @@ import {
   getOfflineContributions,
   removeOfflineContribution,
   saveOfflineContribution,
-} from '../../database/offline-queue';
-import { api } from '../../api/client';
+} from '@/database/OfflineQueue';
+import { api } from '@/api/client';
 import { fetchWalletData } from './walletSlice';
 
 export const syncOfflineData = createAsyncThunk(

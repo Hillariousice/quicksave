@@ -1,6 +1,6 @@
 import { configureStore } from '@reduxjs/toolkit';
 import groupReducer, { fetchMyGroups } from '@/store/slices/groupSlice';
-import { GroupService } from '@/api/services/group.service'; // Adjust path if needed
+import { GroupService } from '@/api/services/GroupService'; // Adjust path if needed
 
 // 1. Mock the API Service so we don't hit the real backend
 jest.mock('@/api/services/group.service');
@@ -34,7 +34,7 @@ describe('Group Slice Integration', () => {
 
     // Verify it stopped loading
     expect(state.isLoading).toBe(false);
-    
+
     // Verify it dynamically sorted Active vs Completed groups!
     expect(state.activeGroups.length).toBe(2);
     expect(state.activeGroups[0].name).toBe('Active Circle');

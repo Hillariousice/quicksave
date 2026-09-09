@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import { NotificationService } from '@/api/services/notification.service';
+import { NotificationService } from '@/api/services';
 
 export const fetchNotifications = createAsyncThunk('notifications/fetchAll', async () => {
   return await NotificationService.getAll();

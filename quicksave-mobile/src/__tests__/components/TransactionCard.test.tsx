@@ -1,6 +1,6 @@
 import React from 'react';
 import { render } from '@testing-library/react-native';
-import  TransactionCard  from '@/components/card/transaction-card';
+import  TransactionCard  from '@/components/card/TransactionCard';
 import { Colors } from '@/theme/Colors';
 
 describe('TransactionCard Component', () => {

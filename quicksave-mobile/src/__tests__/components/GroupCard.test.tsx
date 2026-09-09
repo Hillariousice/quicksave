@@ -2,7 +2,7 @@ import React from 'react';
 import { render, fireEvent } from '@testing-library/react-native';
 import { useRouter } from 'expo-router';
 import { useColorScheme } from 'react-native';
-import { GroupCard } from '@/components/card/group-card'; 
+import { GroupCard } from '@/components/card/GroupCard'; 
 import { Colors } from '@/theme/Colors';
 
 describe('GroupCard Component', () => {

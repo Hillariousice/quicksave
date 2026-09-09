@@ -42,23 +42,51 @@ export default function RegisterScreen() {
   };
 
   const handleRegister = async () => {
+    // 👉 1. CLIENT-SIDE VALIDATION (Stops the flicker before it even hits the backend!)
+    if (!formData.firstName || !formData.lastName || !formData.email || !formData.phone || !formData.password || !formData.pin) {
+      setErrorMsg('Please fill in all fields.');
+      return;
+    }
+    
+    if (formData.password.length < 6) {
+      setErrorMsg('Password must be at least 6 characters.');
+      return;
+    }
+
+    if (formData.pin.length !== 4) {
+      setErrorMsg('Transaction PIN must be exactly 4 digits.');
+      return;
+    }
+
     setErrorMsg('');
     setLoading(true);
 
     try {
-      // backend api for register
+      // 2. Hit the backend API
       await api.post('/auth/register', formData);
 
-      // If successful, navigate to the Verify OTP screen
-      // We pass the email in the URL so the Verify screen knows who to verify!
-      router.push({
-        pathname: '/auth/verify',
+      // 3. If successful, route to Verify OTP
+      router.replace({
+        pathname: '/auth/verify', // Double-check this path matches your folder structure!
         params: { email: formData.email },
       });
+
     } catch (error: any) {
-      // Extract the clean error message we formatted in our backend Error Handler
-      const message = error.response?.data?.message || 'Something went wrong. Please try again.';
-      setErrorMsg(message);
+      console.error('Registration Error Object:', error);
+      
+      // 4. Read Zod Errors, Backend Errors, and Network Errors!
+      if (error.response?.data?.errors && error.response.data.errors.length > 0) {
+        // Catch Zod validation errors (e.g., "Invalid email format")
+        setErrorMsg(error.response.data.errors[0].message);
+      } else if (error.response?.data?.message) {
+        // Catch standard backend errors (e.g., "Email already exists")
+        setErrorMsg(error.response.data.message);
+      } else if (error.message === 'Network Error') {
+        setErrorMsg('Cannot connect to server. Check your internet connection.');
+      } else {
+        setErrorMsg('Something went wrong. Please try again.');
+      }
+
     } finally {
       setLoading(false);
     }
@@ -213,7 +241,7 @@ export default function RegisterScreen() {
           </TouchableOpacity>
 
           {/* Footer */}
-          <View style={styles.footer}>
+          <View style={[styles.footer, { paddingBottom: Platform.OS === 'ios' ? 40 : 30 }]}>
             <Text style={[styles.footerText, { color: theme.textSecondary }]}>
               Already have an account?{' '}
             </Text>

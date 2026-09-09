@@ -20,7 +20,7 @@ import { Colors } from '@/theme/Colors';
 import { useDispatch } from 'react-redux';
 import { verifyOtpAction } from '@/store/slices/authSlice';
 import { api } from '@/api/client';
-import { useCountdown } from '@/hooks/use-countdown';
+import { useCountdown } from '@/hooks/useCountdown';
 
 export default function VerifyScreen() {
   const { email } = useLocalSearchParams<{ email: string }>();
@@ -168,7 +168,7 @@ export default function VerifyScreen() {
             </TouchableOpacity>
           </View>
 
-          <View style={styles.footer}>
+          <View style={[styles.footer, { paddingBottom: Platform.OS === 'ios' ? 40 : 30 }]}>
             <TouchableOpacity
               style={[
                 styles.button,

@@ -13,7 +13,9 @@ import {
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { FontAwesome5, Feather } from '@expo/vector-icons';
 import { Colors } from '@/theme/Colors';
-import { AuthService } from '@/api/services/auth.service';
+import { AuthService } from '@/api/services';
+
+
 
 export default function ResetPasswordScreen() {
   const router = useRouter();
@@ -88,7 +90,7 @@ export default function ResetPasswordScreen() {
         </View>
       </View>
 
-      <View style={styles.footer}>
+      <View style={[styles.footer, { paddingBottom: Platform.OS === 'ios' ? 40 : 30 }]}>
         <TouchableOpacity
           style={[styles.button, { backgroundColor: theme.primary, opacity: loading ? 0.7 : 1 }]}
           onPress={handleReset}

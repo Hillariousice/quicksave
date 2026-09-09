@@ -6,7 +6,7 @@ import { Colors } from '@/theme/Colors';
 import { captureRef } from 'react-native-view-shot';
 import * as Sharing from 'expo-sharing';
 import * as MediaLibrary from 'expo-media-library';
-import { WalletService } from '@/api/services/wallet.service';
+import { WalletService } from '@/api/services/walletService';
 
 export default function TransactionReceiptScreen() {
   const router = useRouter();

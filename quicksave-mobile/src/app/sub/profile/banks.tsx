@@ -7,7 +7,7 @@ import {
 import { useRouter } from 'expo-router';
 import { FontAwesome5, Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { Colors } from '@/theme/Colors';
-import { UserService } from '@/api/services/user.service';
+import { UserService } from '@/api/services/userService';
 
 export default function BankAccountScreen() {
   const router = useRouter();

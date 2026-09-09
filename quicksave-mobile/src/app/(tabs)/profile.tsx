@@ -8,7 +8,7 @@ import { FontAwesome5, Feather } from '@expo/vector-icons';
 import { Colors } from '@/theme/Colors';
 import { logout } from '@/store/slices/authSlice';
 import { api } from '@/api/client';
-import { UserService } from '@/api/services/user.service';
+import { UserService } from '@/api/services/userService';
 
 export default function ProfileScreen() {
   const router = useRouter();

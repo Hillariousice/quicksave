@@ -1,29 +1,31 @@
 import React, { useEffect, useState } from 'react';
 import { Stack, useRouter, useSegments } from 'expo-router';
-import { useColorScheme } from 'react-native';
+import { useColorScheme, Platform, StatusBar } from 'react-native';
 import { Provider, useDispatch, useSelector } from 'react-redux';
 import * as SplashScreen from 'expo-splash-screen';
 import * as SecureStore from 'expo-secure-store';
-import { store, RootState, persistor, useAppSelector } from '../store';
-import { Colors } from '../theme/Colors';
-import { restoreSession } from '../store/slices/authSlice';
+import { store, RootState, persistor, useAppSelector } from '@/store';
+import { Colors } from '@/theme/Colors';
+import { restoreSession } from '@/store/slices/authSlice';
 import { PersistGate } from 'redux-persist/integration/react';
-import { injectStore } from '../api/client';
+import { injectStore } from '@/api/client';
 import NetInfo from '@react-native-community/netinfo';
-import { setNetworkState } from '../store/slices/networkSlice';
-import OfflineBanner from '../components/ui/offline-banner';
-import { syncOfflineData } from '../store/slices/offlineQueueSlice';
-import { socketService } from '@/api/services/socket.service';
-import NewMemberToast from '@/components/ui/newmember-toast';
-import PayoutToast from '@/components/ui/payout-toast';
-import { usePushNotifications } from '@/hooks/use-push-notification';
-import FabricIndicator from '@/components/ui/fabric-indicator';
-import AppLockOverlay from '@/components/ui/applock-overlay';
+import { setNetworkState } from '@/store/slices/networkSlice';
+import { usePushNotifications } from '@/hooks/usePushNotification';
+import { syncOfflineData } from '@/store/slices/offlineQueueSlice';
+
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import * as Sentry from '@sentry/react-native';
 
+import { socketService } from '@/api/services';
+import { AppLockOverlay, FabricIndicator, NewMemberToast, OfflineBanner, PayoutToast } from '@/components/ui';
+
+
+
 // Prevent the splash screen from auto-hiding
 SplashScreen.preventAutoHideAsync();
+
+
 
 injectStore(store);
 
@@ -98,24 +100,26 @@ function RootNavigator() {
 useEffect(() => {
   if (isBooting || isFirstTime === null) return;
 
+  SplashScreen.hideAsync().catch(() => {});
+
   const inAuthGroup = segments[0] === 'auth';
   const isRoot = segments.length === 0 || segments[0] === undefined || segments[0] === '';
 
-  SplashScreen.hideAsync().catch(() => {});
+
 
   if (isAuthenticated) {
-    if (inAuthGroup || isRoot) {
+    if (inAuthGroup || isRoot || segments[0] === 'onboarding') {
       router.replace('/(tabs)');
     }
   } else {
     if (isFirstTime) {
       // FIX: Only redirect to root if they are NOT already trying to go to an auth screen
       // This allows the "Get Started" button to work.
-      if (!isRoot && !inAuthGroup) {
+      if (!isRoot && !inAuthGroup && segments[0] !== 'onboarding') {
         router.replace('/');
       }
     } else {
-      if (!inAuthGroup) {
+      if (!inAuthGroup && !isRoot) {
         router.replace('/auth/login');
       }
     }
@@ -131,6 +135,7 @@ useEffect(() => {
       screenOptions={{ headerShown: false, contentStyle: { backgroundColor: theme.background } }}
     >
       <Stack.Screen name="index" />
+      <Stack.Screen name="onboarding" />
       <Stack.Screen name="auth/login" />
       <Stack.Screen name="auth/register" />
       <Stack.Screen name="auth/verify" />

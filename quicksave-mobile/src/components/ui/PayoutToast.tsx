@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Animated, SafeAreaView, Platform, useColorScheme } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Colors } from '@/theme/Colors';
-import { socketService } from '@/api/services/socket.service';
+import { socketService } from '@/api/services/SocketService';
 
 export default function PayoutToast() {
   const colorScheme = useColorScheme();

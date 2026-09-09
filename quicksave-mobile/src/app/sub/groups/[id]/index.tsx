@@ -20,11 +20,10 @@ import { api } from '@/api/client';
 // import { timeAgo } from '@/utils/time';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { fetchGroupActivity, fetchGroupDetails } from '@/store/slices/groupSlice';
-import LoadingState from '@/components/ui/loading-state';
 import { updateStatusThunk } from '@/store/slices/groupSlice';
 import { timeAgo } from '@/utils/time';
-import { socketService } from '@/api/services/socket.service';
-import CachedAvatar from '@/components/ui/cached-avatar';
+import { socketService } from '@/api/services';
+import {CachedAvatar, LoadingState} from '@/components/ui';
 
 export default function GroupDetailScreen() {
   const router = useRouter();

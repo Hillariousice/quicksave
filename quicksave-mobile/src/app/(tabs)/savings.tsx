@@ -9,7 +9,7 @@ import { FontAwesome5, Feather } from '@expo/vector-icons';
 import { Colors } from '@/theme/Colors';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { fetchWalletData } from '@/store/slices/walletSlice';
-import { useKycGuard } from '@/hooks/use-kyc-guard';
+import { useKycGuard } from '@/hooks/useKycGuard';
 
 export default function WalletDashboardScreen() {
   const router = useRouter();

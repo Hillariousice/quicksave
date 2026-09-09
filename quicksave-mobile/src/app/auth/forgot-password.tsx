@@ -9,11 +9,16 @@ import {
   useColorScheme,
   ActivityIndicator,
   Alert,
+  Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { FontAwesome5, Feather } from '@expo/vector-icons';
 import { Colors } from '@/theme/Colors';
-import { AuthService } from '@/api/services/auth.service';
+import { AuthService } from '@/api/services';
+
+
+
+
 
 export default function ForgotPasswordScreen() {
   const router = useRouter();
@@ -70,7 +75,7 @@ export default function ForgotPasswordScreen() {
         </View>
       </View>
 
-      <View style={styles.footer}>
+      <View style={[styles.footer, { paddingBottom: Platform.OS === 'ios' ? 40 : 30 }]}>
         <TouchableOpacity
           style={[
             styles.button,

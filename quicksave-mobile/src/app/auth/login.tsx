@@ -20,7 +20,7 @@ import { Colors } from '@/theme/Colors';
 import { loginUser, restoreSession } from '@/store/slices/authSlice';
 import { promptBiometrics } from '@/utils/biometrics';
 import { useAppDispatch } from '@/store';
-import { SecureVault } from '@/utils/securestorage';
+import { SecureVault } from '@/utils/secureStorage';
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -209,7 +209,7 @@ export default function LoginScreen() {
         </TouchableOpacity>
 
         {/* Footer */}
-        <View style={styles.footer}>
+        <View style={[styles.footer, { paddingBottom: Platform.OS === 'ios' ? 40 : 30 }]}>
           <Text style={[styles.footerText, { color: theme.textSecondary }]}>
             Don't have an account?{' '}
           </Text>

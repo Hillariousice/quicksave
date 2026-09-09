@@ -4,7 +4,7 @@ import { useRouter } from 'expo-router';
 import { FontAwesome5, Feather, MaterialIcons } from '@expo/vector-icons';
 import { Colors } from '@/theme/Colors';
 import { useAppDispatch, useAppSelector } from '@/store';
-import api, { ChatService } from '@/api/services/chat.service';
+import api, { ChatService } from '@/api/services/ChatService';
 import { markLocalAsRead, setConversations } from '@/store/slices/chatSlice';
 
 

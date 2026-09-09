@@ -19,8 +19,8 @@ import * as WebBrowser from 'expo-web-browser';
 import * as SecureStore from 'expo-secure-store';
 import { Colors } from '@/theme/Colors';
 import { api } from '@/api/client';
-import { UserService } from '@/api/services/user.service';
-import { WalletService } from '@/api/services/wallet.service';
+import { UserService } from '@/api/services/userService';
+import { WalletService } from '@/api/services/walletService';
 import { promptBiometrics } from '@/utils/biometrics';
 
 const QUICK_AMOUNTS = [5000, 10000, 20000, 50000];

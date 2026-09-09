@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import { GroupService } from '../../api/services/group.service';
+import { GroupService } from '@/api/services';
 import { fetchWalletData } from './walletSlice';
 import { fetchGroupDetails } from './groupSlice';
 

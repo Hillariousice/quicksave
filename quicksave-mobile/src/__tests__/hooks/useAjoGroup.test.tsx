@@ -3,8 +3,8 @@ import { renderHook, waitFor } from '@testing-library/react-native';
 import { Provider } from 'react-redux';
 import { configureStore } from '@reduxjs/toolkit';
 import groupReducer from '@/store/slices/groupSlice';
-import { useAjoGroup } from '@/hooks/use-ajo-group';
-import { GroupService } from '@/api/services/group.service';
+import { useAjoGroup } from '@/hooks/useAjoGroup';
+import { GroupService } from '@/api/services/GroupService';
 
 jest.mock('@/api/services/group.service');
 const mockedGroupService = GroupService as jest.Mocked<typeof GroupService>;

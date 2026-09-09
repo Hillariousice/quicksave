@@ -6,7 +6,7 @@ import {
 import { useRouter } from 'expo-router';
 import { FontAwesome5, Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { Colors } from '@/theme/Colors';
-import { UserService } from '@/api/services/user.service'; // Or AuthService
+import { UserService } from '@/api/services/userService'; // Or AuthService
 import { useAppDispatch } from '@/store';
 import { setCredentials } from '@/store/slices/authSlice'; 
 

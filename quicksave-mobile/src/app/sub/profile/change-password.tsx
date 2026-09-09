@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, TextInput, Keyb
 import { useRouter } from 'expo-router';
 import { FontAwesome5, Feather } from '@expo/vector-icons';
 import { Colors } from '@/theme/Colors';
-import { AuthService } from '@/api/services/auth.service';
+import { AuthService } from '@/api/services/AuthService';
 
 
 export default function ChangePasswordScreen() {

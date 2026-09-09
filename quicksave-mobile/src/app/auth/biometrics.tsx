@@ -7,12 +7,14 @@ import {
   useColorScheme,
   SafeAreaView,
   Alert,
+  Platform
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { FontAwesome5, MaterialCommunityIcons, Feather } from '@expo/vector-icons';
 import * as LocalAuthentication from 'expo-local-authentication';
 import * as SecureStore from 'expo-secure-store';
 import { Colors } from '@/theme/Colors';
+
 
 export default function BiometricSetupScreen() {
   const router = useRouter();
@@ -120,7 +122,7 @@ export default function BiometricSetupScreen() {
           </TouchableOpacity>
 
           {/* Footer Security Text */}
-          <View style={styles.securityFooter}>
+          <View style={[styles.securityFooter,{ paddingBottom: Platform.OS === 'ios' ? 40 : 30 }]}>
             <Feather name="lock" size={12} color={theme.textSecondary} />
             <Text style={[styles.securityText, { color: theme.textSecondary }]}>
               Secured by Quicksave Vault Technology

@@ -1,6 +1,6 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { api } from '@/api/client';
-import { WalletService } from '@/api/services/wallet.service';
+import { WalletService } from '@/api/services';
 
 // Async Thunks for API Calls
 export const fetchWalletData = createAsyncThunk(

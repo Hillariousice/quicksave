@@ -8,9 +8,9 @@ import { FontAwesome5, Feather, MaterialIcons } from '@expo/vector-icons';
 import { Colors } from '@/theme/Colors';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { fetchMessages, receiveMessage } from '@/store/slices/chatSlice';
-import { ChatService } from '@/api/services/chat.service';
+import { ChatService } from '@/api/services/ChatService';
 import { io } from 'socket.io-client';
-import { getDayLabel } from '@/utils/date-helper';
+import { getDayLabel } from '@/utils/dateHelper';
 
 export default function GroupChatScreen() {
   const router = useRouter();

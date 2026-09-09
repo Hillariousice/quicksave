@@ -8,13 +8,13 @@ import { FontAwesome5, Feather } from '@expo/vector-icons';
 import { io } from 'socket.io-client';
 
 import { Colors } from '@/theme/Colors';
-import { WalletService } from '@/api/services/wallet.service';
-import SkeletonLoader from '@/components/ui/skeleton-loader';
-import TransactionCard from '@/components/card/transaction-card';
+
+import SkeletonLoader from '@/components/ui/SkeletonLoader';
+import TransactionCard from '@/components/card/TransactionCard';
 import { useAppSelector } from '@/store';
-import OptimizedList from '@/components/ui/optimed-list';
-import TransactionGroupCard from '@/components/card/transaction-group-card';
-import { socketService } from '@/api/services/socket.service';
+import OptimizedList from '@/components/ui/OptimedList';
+import TransactionGroupCard from '@/components/card/TransactionGroupCard';
+import { socketService, WalletService } from '@/api/services';
 
 // The filters matching your Figma design
 const FILTERS = ['All', 'Contributions', 'Payouts', 'Top-ups', 'Withdrawals'];

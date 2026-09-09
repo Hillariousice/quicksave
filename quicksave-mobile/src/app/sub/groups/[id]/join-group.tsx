@@ -13,7 +13,7 @@ import { api } from '@/api/client';
 
 import { useAppDispatch } from '@/store';
 import { fetchMyGroups } from '@/store/slices/groupSlice';
-import { GroupService } from '@/api/services/group.service';
+import { GroupService } from '@/api/services/GroupService';
 
 export default function JoinGroupScreen() {
   const router = useRouter();

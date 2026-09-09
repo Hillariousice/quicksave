@@ -1,6 +1,6 @@
 import React from 'react';
 import { render, fireEvent } from '@testing-library/react-native';
-import ActionBtn from '@/components/home/action-btn';
+import ActionBtn from '@/components/home/ActionBtn';
 import { Colors } from '@/theme/Colors';
 
 describe('ActionBtn Component', () => {

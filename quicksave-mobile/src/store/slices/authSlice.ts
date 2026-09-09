@@ -1,8 +1,8 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import * as SecureStore from 'expo-secure-store';
 import { api } from '../../api/client';
-import { AuthService } from '../../api/services/auth.service';
-import { SecureVault } from '@/utils/securestorage';
+import { SecureVault } from '@/utils/secureStorage';
+import { AuthService } from '@/api/services';
 
 // Ensure this is at the top of the file
 export const loginUser = createAsyncThunk(
@@ -40,7 +40,7 @@ export const verifyOtpAction = createAsyncThunk(
 
 export const setCredentials = createAsyncThunk(
   'auth/setCrediental',
-  async ({user, tokens}: {user: any, tokens?: {accessToken: string, refreshToken: string}}, { rejectWithValue }) => {
+  async ({ user, tokens }: { user: any, tokens?: { accessToken: string, refreshToken: string } }, { rejectWithValue }) => {
     try {
       if (tokens) {
         await SecureStore.setItemAsync('accessToken', tokens.accessToken);

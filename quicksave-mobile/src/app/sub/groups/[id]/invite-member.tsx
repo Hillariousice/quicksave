@@ -17,7 +17,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { FontAwesome5, Feather, MaterialIcons } from '@expo/vector-icons';
 import { Colors } from '@/theme/Colors';
 import { api } from '@/api/client';
-import { GroupService } from '@/api/services/group.service';
+import { GroupService } from '@/api/services/GroupService';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { fetchGroupDetails } from '@/store/slices/groupSlice';
 

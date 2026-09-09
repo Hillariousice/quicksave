@@ -1,6 +1,6 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { api } from '@/api/client';
-import { GroupService } from '@/api/services/group.service';
+import { GroupService } from '@/api/services';
 
 export const fetchMyGroups = createAsyncThunk(
   'groups/fetchMyGroups',

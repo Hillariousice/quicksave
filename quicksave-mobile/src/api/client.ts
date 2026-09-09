@@ -1,6 +1,6 @@
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
-import { SecureVault } from '../utils/securestorage';
+import { SecureVault } from '../utils/secureStorage';
 
 export const api = axios.create({
   baseURL: process.env.EXPO_PUBLIC_API_URL,

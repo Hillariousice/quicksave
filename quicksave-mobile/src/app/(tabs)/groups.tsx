@@ -9,11 +9,11 @@ import { api } from '@/api/client';
 import { Colors } from '@/theme/Colors';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { fetchMyGroups } from '@/store/slices/groupSlice';
-import LoadingState from '@/components/ui/loading-state';
-import ErrorState from '@/components/ui/error-state';
-import EmptyState from '@/components/ui/empty-state';
+import LoadingState from '@/components/ui/LoadingState';
+import ErrorState from '@/components/ui/ErrorState';
+import EmptyState from '@/components/ui/EmptyState';
 import { useDispatch } from 'react-redux';
-import PendingSyncBadge from '@/components/ui/pendingsync-badge';
+import PendingSyncBadge from '@/components/ui/PendingSyncBadge';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
 export default function GroupsScreen() {

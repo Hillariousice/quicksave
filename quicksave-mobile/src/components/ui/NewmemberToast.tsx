@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Animated, SafeAreaView, Platform, useColorScheme, Image, TouchableOpacity } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { Colors } from '@/theme/Colors';
-import { socketService } from '@/api/services/socket.service';
+import { socketService } from '@/api/services/SocketService';
 import { useAppDispatch } from '@/store';
 import { memberJoinedRealtime } from '@/store/slices/groupSlice';
 

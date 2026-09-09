@@ -2,7 +2,7 @@ import { configureStore } from '@reduxjs/toolkit';
 import contributionReducer, { submitContribution } from '@/store/slices/contributionSlice';
 import walletReducer from '@/store/slices/walletSlice';
 import groupReducer from '@/store/slices/groupSlice';
-import { GroupService } from '@/api/services/group.service';
+import { GroupService } from '@/api/services/GroupService';
 
 jest.mock('@/services/group.service');
 const mockedGroupService = GroupService as jest.Mocked<typeof GroupService>;
@@ -34,8 +34,8 @@ describe('Contribution Cross-Slice Synchronization', () => {
 
     // 2. ⭐️ THE CROSS-SLICE AUDIT: 
     // Did it automatically trigger the Wallet and Group refreshes?
-    const dispatchedActionTypes = dispatchSpy.mock.calls.map((call: any)=> call[0].type);
-    
+    const dispatchedActionTypes = dispatchSpy.mock.calls.map((call: any) => call[0].type);
+
     expect(dispatchedActionTypes).toContain('wallet/fetchData/pending');
     expect(dispatchedActionTypes).toContain('groups/fetchDetails/pending');
   });

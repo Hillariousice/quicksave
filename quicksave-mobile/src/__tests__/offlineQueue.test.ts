@@ -1,7 +1,7 @@
 import { configureStore } from '@reduxjs/toolkit';
 import offlineQueueReducer, { syncOfflineData, enqueueContribution } from '@/store/slices/offlineQueueSlice';
 import { api } from '@/api/client';
-import * as offlineDB from '../database/offlineQueue';
+import * as offlineDB from '../database/OfflineQueue;
 
 // Mock the API client
 jest.mock('../api/client');
@@ -28,7 +28,7 @@ describe('Offline Queue & Sync Engine', () => {
     });
 
     await store.dispatch(enqueueContribution({ groupId: 'group-1', amount: 10000 }));
-    
+
     const state = store.getState().offlineQueue;
     expect(state.pendingContributions.length).toBe(1);
     expect(state.pendingContributions[0].amount).toBe(10000);
@@ -39,7 +39,7 @@ describe('Offline Queue & Sync Engine', () => {
     jest.spyOn(offlineDB, 'getOfflineContributions').mockResolvedValue([
       { id: 'tx-1', groupId: 'group-1', amount: 5000, status: 'PENDING', createdAt: '2026-06-30T12:00:00Z' }
     ]);
-    
+
     // Simulate a Network Drop/Server Crash during the POST request!
     mockedApi.post.mockRejectedValueOnce(new Error('Network Error'));
 
@@ -55,9 +55,9 @@ describe('Offline Queue & Sync Engine', () => {
   it('3. should delete local records on successful sync (Idempotency Success)', async () => {
     const mockRecord = { id: 'tx-1', groupId: 'group-1', amount: 5000, status: 'PENDING', createdAt: '2026-06-30T12:00:00Z' };
     jest.spyOn(offlineDB, 'getOfflineContributions').mockResolvedValue([mockRecord]);
-    
+
     const removeSpy = jest.spyOn(offlineDB, 'removeOfflineContribution').mockResolvedValue();
-    
+
     // Simulate a successful 202 response from your Express backend
     mockedApi.post.mockResolvedValueOnce({ data: { success: true } });
 

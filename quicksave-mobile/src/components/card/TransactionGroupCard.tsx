@@ -1,6 +1,6 @@
 import React, { memo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import TransactionCard from './transaction-card'; 
+import TransactionCard from './TransactionCard'; 
 import Animated, { FadeInUp } from 'react-native-reanimated'; 
 
 interface TransactionGroupCardProps {

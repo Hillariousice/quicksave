@@ -73,7 +73,7 @@ export default function AppLockOverlay() {
 
 const styles = StyleSheet.create({
   overlay: {
-    ...StyleSheet.absoluteFillObject, // Fills the entire screen
+    ...StyleSheet.absoluteFill, // Fills the entire screen
     zIndex: 99999, // Sits above literally everything
     justifyContent: 'center',
     alignItems: 'center',
