@@ -1,15 +1,7 @@
 module.exports = {
   presets: ['babel-preset-expo'],
   plugins: [
-    [
-      'module-resolver',
-      {
-        root: ['./src'],
-        alias: {
-          '@': './src',
-        },
-      },
-    ],
+    // I DELETED THE MODULE-RESOLVER FROM HERE
     'react-native-reanimated/plugin', // must be last
   ],
 };
